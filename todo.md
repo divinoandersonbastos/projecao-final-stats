@@ -103,3 +103,10 @@
 - [x] Integrar com tRPC procedure para importação (pdfImportRouter)
 - [x] Criar testes unitários para parser de PDF (11 testes passando)
 - [x] Testar com PDFs reais do CraqueStats (6 testes de integração com dados reais)
+
+
+## Bugs Identificados e Correções
+
+- [ ] PDF parser não está extraindo corretamente valores "Contra" (defensivos)
+- [ ] Campos "Contra" aparecem como 0 em vez dos valores reais do PDF
+- [ ] Validar ordem correta de extração de dados da tabela do CraqueStats

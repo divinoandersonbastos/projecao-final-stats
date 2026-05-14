@@ -1,18 +1,22 @@
-import * as fs from "fs";
+import fs from "fs";
 
 export interface ExtractedTeamData {
   teamName: string;
   attacks: number;
+  attacksAgainst: number;
   corners: number;
+  cornersAgainst: number;
   shots: number;
+  shotsAgainst: number;
   shotsOnTarget: number;
+  shotsOnTargetAgainst: number;
   goals: number;
   goalsAgainst: number;
 }
 
 /**
  * Extract team statistics from CraqueStats PDF
- * Parses the table data from the PDF and extracts key metrics
+ * Parses the table data from the PDF and extracts key metrics including defensive stats
  */
 export async function extractTeamDataFromPDF(
   filePath: string
@@ -39,9 +43,13 @@ export async function extractTeamDataFromPDF(
     return {
       teamName,
       attacks: stats.attacks,
+      attacksAgainst: stats.attacksAgainst,
       corners: stats.corners,
+      cornersAgainst: stats.cornersAgainst,
       shots: stats.shots,
+      shotsAgainst: stats.shotsAgainst,
       shotsOnTarget: stats.shotsOnTarget,
+      shotsOnTargetAgainst: stats.shotsOnTargetAgainst,
       goals: stats.goals,
       goalsAgainst: stats.goalsAgainst,
     };
@@ -53,14 +61,18 @@ export async function extractTeamDataFromPDF(
 
 /**
  * Parse statistics from the extracted text
- * Looks for specific patterns in CraqueStats table format
+ * CraqueStats table format shows pairs of values: "A Favor" and "Contra"
  */
 function parseStatisticsTable(lines: string[]): Record<string, number> {
   const stats: Record<string, number> = {
     attacks: 0,
+    attacksAgainst: 0,
     corners: 0,
+    cornersAgainst: 0,
     shots: 0,
+    shotsAgainst: 0,
     shotsOnTarget: 0,
+    shotsOnTargetAgainst: 0,
     goals: 0,
     goalsAgainst: 0,
   };
@@ -73,63 +85,47 @@ function parseStatisticsTable(lines: string[]): Record<string, number> {
   // Join lines to search for patterns
   const fullText = cleanedLines.join(" ");
 
-  // Extract numerical values using regex patterns
-  // CraqueStats format typically shows values like "15.6" for shots
+  // Extract pairs of values (A Favor and Contra)
+  // CraqueStats format: "Metric A_Favor Contra" or similar
 
-  // Look for finalizações (shots) - typically appears with decimal
-  const shotsMatch = fullText.match(
-    /(?:Finalizações?|Shots?)[\s\S]*?(\d+\.?\d*)/i
-  );
+  // Extract Finalizações (Shots) - usually appears as "15.6" and "11.1"
+  const shotsPattern = /Finalizações?\s+(\d+\.?\d*)\s+(\d+\.?\d*)/i;
+  const shotsMatch = fullText.match(shotsPattern);
   if (shotsMatch) {
     stats.shots = parseFloat(shotsMatch[1]);
+    stats.shotsAgainst = parseFloat(shotsMatch[2]);
   }
 
-  // Look for escanteios (corners)
-  const cornersMatch = fullText.match(
-    /(?:Escanteios?|Corners?)[\s\S]*?(\d+\.?\d*)/i
-  );
+  // Extract Escanteios (Corners)
+  const cornersPattern = /Escanteios?\s+(\d+\.?\d*)\s+(\d+\.?\d*)/i;
+  const cornersMatch = fullText.match(cornersPattern);
   if (cornersMatch) {
     stats.corners = parseFloat(cornersMatch[1]);
+    stats.cornersAgainst = parseFloat(cornersMatch[2]);
   }
 
-  // Look for finalizações no gol (shots on target)
-  const shotsOnTargetMatch = fullText.match(
-    /(?:Finalizações? no gol|Shots? on target)[\s\S]*?(\d+\.?\d*)/i
-  );
+  // Extract Finalizações no Gol (Shots on Target)
+  const shotsOnTargetPattern = /Finalizações?\s+no\s+gol\s+(\d+\.?\d*)\s+(\d+\.?\d*)/i;
+  const shotsOnTargetMatch = fullText.match(shotsOnTargetPattern);
   if (shotsOnTargetMatch) {
     stats.shotsOnTarget = parseFloat(shotsOnTargetMatch[1]);
+    stats.shotsOnTargetAgainst = parseFloat(shotsOnTargetMatch[2]);
   }
 
-  // Look for gols (goals)
-  const goalsMatch = fullText.match(/(?:Gols?|Goals?)[\s\S]*?(\d+\.?\d*)/i);
+  // Extract Gols (Goals)
+  const goalsPattern = /Gols?\s+(\d+\.?\d*)\s+(\d+\.?\d*)/i;
+  const goalsMatch = fullText.match(goalsPattern);
   if (goalsMatch) {
     stats.goals = parseFloat(goalsMatch[1]);
+    stats.goalsAgainst = parseFloat(goalsMatch[2]);
   }
 
-  // Look for ataques perigosos (dangerous attacks)
-  const attacksMatch = fullText.match(
-    /(?:Ataques? perigosos?|Dangerous attacks?)[\s\S]*?(\d+\.?\d*)/i
-  );
+  // Extract Ataques Perigosos (Dangerous Attacks)
+  const attacksPattern = /Ataques?\s+perigosos?\s+(\d+\.?\d*)\s+(\d+\.?\d*)/i;
+  const attacksMatch = fullText.match(attacksPattern);
   if (attacksMatch) {
     stats.attacks = parseFloat(attacksMatch[1]);
-  }
-
-  // If we couldn't extract from text, try to find numbers in specific positions
-  // This is a fallback for when the PDF structure is different
-  if (stats.shots === 0 && stats.corners === 0) {
-    // Try to find the main statistics table
-    const numberSequences = fullText.match(/\d+\.?\d*\s+\d+\.?\d*\s+\d+\.?\d*/g);
-    if (numberSequences && numberSequences.length > 0) {
-      // Parse the first few number sequences as our main stats
-      const numbers = numberSequences[0]
-        .split(/\s+/)
-        .map((n: string) => parseFloat(n));
-      if (numbers.length >= 3) {
-        stats.shots = numbers[0];
-        stats.shotsOnTarget = numbers[1];
-        stats.corners = numbers[2];
-      }
-    }
+    stats.attacksAgainst = parseFloat(attacksMatch[2]);
   }
 
   return stats;
@@ -148,7 +144,7 @@ export async function extractMultipleTeams(
       const data = await extractTeamDataFromPDF(filePath);
       results.push(data);
     } catch (error) {
-      console.error(`Failed to extract from ${filePath}:`, error);
+      console.error(`Failed to extract data from ${filePath}:`, error);
     }
   }
 
