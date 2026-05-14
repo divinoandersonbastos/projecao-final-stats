@@ -1,4 +1,5 @@
 import fs from "fs";
+import { PDFParse } from "pdf-parse";
 
 export interface ExtractedTeamData {
   teamName: string;
@@ -25,13 +26,10 @@ export async function extractTeamDataFromPDF(
     // Read PDF file
     const fileBuffer = fs.readFileSync(filePath);
 
-    // Dynamically import pdf-parse to handle ESM
-    const pdfParseModule = await import("pdf-parse");
-    const pdfParse = (pdfParseModule as any).default || (pdfParseModule as any);
-
-    // Parse PDF
-    const pdfData = await pdfParse(fileBuffer);
-    const text = pdfData.text;
+    // Parse PDF using PDFParse class
+    const parser = new PDFParse({ data: fileBuffer });
+    const textResult = await parser.getText();
+    const text = textResult.text;
 
     // Extract team name (appears at top of page)
     const teamNameMatch = text.match(/^[^0-9]*?(Flamengo|Vitória|[A-Z][a-z]+)/m);

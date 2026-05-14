@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { extractTeamDataFromPDF } from "../scrapers/pdf-parser";
+import { extractTeamDataFromPDFWithOCR } from "../scrapers/pdf-parser-ocr";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -23,8 +24,8 @@ export const pdfImportRouter = router({
           throw new Error("File not found");
         }
 
-        // Extract data from PDF
-        const extractedData = await extractTeamDataFromPDF(input.filePath);
+        // Extract data from PDF (uses OCR for scanned PDFs automatically)
+        const extractedData = await extractTeamDataFromPDFWithOCR(input.filePath);
 
         // Validate extracted data
         if (!extractedData.teamName) {
@@ -72,9 +73,9 @@ export const pdfImportRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        // Extract data from both PDFs
-        const homeData = await extractTeamDataFromPDF(input.homeTeamPath);
-        const awayData = await extractTeamDataFromPDF(input.awayTeamPath);
+        // Extract data from both PDFs (uses OCR for scanned PDFs automatically)
+        const homeData = await extractTeamDataFromPDFWithOCR(input.homeTeamPath);
+        const awayData = await extractTeamDataFromPDFWithOCR(input.awayTeamPath);
 
         return {
           success: true,

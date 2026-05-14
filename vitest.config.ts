@@ -15,5 +15,6 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    testTimeout: 60000, // 60 seconds for LLM-based tests
   },
 });

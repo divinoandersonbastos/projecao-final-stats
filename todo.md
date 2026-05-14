@@ -107,6 +107,27 @@
 
 ## Bugs Identificados e Correções
 
-- [ ] PDF parser não está extraindo corretamente valores "Contra" (defensivos)
-- [ ] Campos "Contra" aparecem como 0 em vez dos valores reais do PDF
-- [ ] Validar ordem correta de extração de dados da tabela do CraqueStats
+- [x] PDF parser não está extraindo corretamente valores "Contra" (defensivos) - CORRIGIDO
+- [x] Campos "Contra" aparecem como 0 em vez dos valores reais do PDF - CORRIGIDO
+- [x] Validar ordem correta de extração de dados da tabela do CraqueStats - VALIDADO
+
+
+## Fase 12: Validação e Testes Finais
+
+- [x] Testar PDF import com PDFs reais do Flamengo e Vitória (6 testes de integração)
+- [x] Validar que campos "Contra" não aparecem como 0 (validado nos testes)
+- [x] Testar fluxo completo: PDF upload -> sessionStorage -> formulário pré-preenchido (1 teste cobrindo fluxo)
+- [x] Validar cálculos de ranking com dados importados (motor de cálculo testado)
+- [x] Testar exportação em PDF com dados importados (7 testes de PDF export)
+
+
+## Fase 13: Suporte para PDFs Scaneados (OCR via LLM)
+
+- [x] Implementar extração de imagens do PDF usando pdf-parse
+- [x] Integrar com LLM do Manus para análise de imagens (visão computacional)
+- [x] Criar novo parser que suporta PDFs scaneados (pdf-parser-ocr.ts)
+- [x] Testar com PDFs reais do Flamengo e Vitória (scaneados)
+- [x] Validar extração de dados estatísticos via OCR
+- [x] Atualizar testes de integração para cobrir PDFs scaneados (5 testes estruturais)
+- [x] Integrar parser OCR no router tRPC de PDF import
+- [x] Criar checkpoint com suporte a PDFs scaneados
