@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Plus, BarChart3, TrendingUp } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Plus, BarChart3, TrendingUp, FileUp } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -29,6 +29,7 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: Plus, label: "Nova Análise", path: "/dashboard/new" },
+  { icon: FileUp, label: "Importar PDF", path: "/dashboard/pdf-import" },
   { icon: BarChart3, label: "Histórico", path: "/dashboard/history" },
   { icon: TrendingUp, label: "Ranking", path: "/dashboard/ranking" },
 ];
