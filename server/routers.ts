@@ -1,10 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import { calculateProjections, TeamData } from "./calculations";
+import { createAnalysis, getUserAnalyses, getAnalysisById, deleteAnalysis } from "./db";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -17,12 +19,129 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  analysis: router({
+    /**
+     * Create a new analysis
+     */
+    create: protectedProcedure
+      .input(
+        z.object({
+          homeTeamName: z.string().min(1, "Nome do time mandante obrigatório"),
+          awayTeamName: z.string().min(1, "Nome do time visitante obrigatório"),
+          analysisMode: z.enum(["mode1", "mode2"]).default("mode2"),
+          homeTeam: z.object({
+            dangerousAttacksFor: z.number().min(0),
+            dangerousAttacksAgainst: z.number().min(0),
+            cornersFor: z.number().min(0),
+            cornersAgainst: z.number().min(0),
+            shotsFor: z.number().min(0),
+            shotsAgainst: z.number().min(0),
+            shotsOnTargetFor: z.number().min(0),
+            shotsOnTargetAgainst: z.number().min(0),
+            goalsFor: z.number().min(0),
+            goalsAgainst: z.number().min(0),
+          }),
+          awayTeam: z.object({
+            dangerousAttacksFor: z.number().min(0),
+            dangerousAttacksAgainst: z.number().min(0),
+            cornersFor: z.number().min(0),
+            cornersAgainst: z.number().min(0),
+            shotsFor: z.number().min(0),
+            shotsAgainst: z.number().min(0),
+            shotsOnTargetFor: z.number().min(0),
+            shotsOnTargetAgainst: z.number().min(0),
+            goalsFor: z.number().min(0),
+            goalsAgainst: z.number().min(0),
+          }),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Prepare team data
+        const homeTeamData: TeamData = {
+          name: input.homeTeamName,
+          ...input.homeTeam,
+        };
+
+        const awayTeamData: TeamData = {
+          name: input.awayTeamName,
+          ...input.awayTeam,
+        };
+
+        // Calculate projections
+        const projections = calculateProjections(homeTeamData, awayTeamData);
+
+        // Generate alternative projections
+        const alternativeProjections = [
+          { home: projections.projectedHomeGoals, away: projections.projectedAwayGoals },
+          { home: projections.projectedHomeGoals + 1, away: projections.projectedAwayGoals },
+          { home: projections.projectedHomeGoals, away: projections.projectedAwayGoals + 1 },
+          { home: projections.projectedHomeGoals - 1, away: projections.projectedAwayGoals },
+          { home: projections.projectedHomeGoals, away: projections.projectedAwayGoals - 1 },
+        ].filter(p => p.home >= 0 && p.away >= 0);
+
+        // Save to database
+        await createAnalysis({
+          userId: ctx.user.id,
+          homeTeamId: 1, // Placeholder
+          awayTeamId: 2, // Placeholder
+          homeTeamName: input.homeTeamName,
+          awayTeamName: input.awayTeamName,
+          analysisMode: input.analysisMode,
+          homeProjectedShots: projections.homeProjectedShots,
+          awayProjectedShots: projections.awayProjectedShots,
+          homeProjectedShotsOnTarget: projections.homeProjectedShotsOnTarget,
+          awayProjectedShotsOnTarget: projections.awayProjectedShotsOnTarget,
+          homeProjectedCorners: projections.homeProjectedCorners,
+          awayProjectedCorners: projections.awayProjectedCorners,
+          homeProjectedGoals: projections.homeProjectedGoals,
+          awayProjectedGoals: projections.awayProjectedGoals,
+          homeOffensiveConversion: projections.homeOffensiveConversion,
+          homeDefensiveConversion: projections.homeDefensiveConversion,
+          awayOffensiveConversion: projections.awayOffensiveConversion,
+          awayDefensiveConversion: projections.awayDefensiveConversion,
+          homePressureFactor: projections.homePressureFactor,
+          awayPressureFactor: projections.awayPressureFactor,
+          projectedHomeGoals: projections.projectedHomeGoals,
+          projectedAwayGoals: projections.projectedAwayGoals,
+          rankingData: projections.rankingLines,
+          homeTeamDataJson: input.homeTeam,
+          awayTeamDataJson: input.awayTeam,
+          alternativeProjections: alternativeProjections,
+        });
+
+        return projections;
+      }),
+
+    /**
+     * Get all analyses for the current user
+     */
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getUserAnalyses(ctx.user.id);
+    }),
+
+    /**
+     * Get a specific analysis by ID
+     */
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const analysis = await getAnalysisById(input.id, ctx.user.id);
+        if (!analysis) {
+          throw new Error("Análise não encontrada");
+        }
+        return analysis;
+      }),
+
+    /**
+     * Delete an analysis
+     */
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteAnalysis(input.id, ctx.user.id);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

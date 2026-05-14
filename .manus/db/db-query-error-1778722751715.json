@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE `analyses` ADD `homeTeamDataJson` json NOT NULL DEFAULT (JSON_OBJECT());\nALTER TABLE `analyses` ADD `awayTeamDataJson` json NOT NULL DEFAULT (JSON_OBJECT());\nALTER TABLE `analyses` ADD `alternativeProjections` json NOT NULL DEFAULT (JSON_ARRAY());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4VP52dmaKgGY1sJ.fd9fa51db4d0 --database 6tGthi5xjyKXXT6uk8KrXa --execute ALTER TABLE `analyses` ADD `homeTeamDataJson` json NOT NULL DEFAULT (JSON_OBJECT());\nALTER TABLE `analyses` ADD `awayTeamDataJson` json NOT NULL DEFAULT (JSON_OBJECT());\nALTER TABLE `analyses` ADD `alternativeProjections` json NOT NULL DEFAULT (JSON_ARRAY());",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1674 (HY000) at line 1: Statement is unsafe because it uses a system function that may return a different value on the slave"
+  ]
+}
