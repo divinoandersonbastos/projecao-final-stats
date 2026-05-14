@@ -134,7 +134,7 @@ export default function NewAnalysis() {
   const createAnalysisMutation = trpc.analysis.create.useMutation({
     onSuccess: (data) => {
       toast.success("Análise criada com sucesso!");
-      navigate("/dashboard/analysis/" + data.rankingLines[0]?.rank);
+      navigate("/dashboard/analysis/" + (data as any).analysisId);
     },
     onError: (error) => {
       toast.error("Erro ao criar análise: " + error.message);

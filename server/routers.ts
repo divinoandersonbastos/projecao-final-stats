@@ -84,7 +84,7 @@ export const appRouter = router({
         ].filter(p => p.home >= 0 && p.away >= 0);
 
         // Save to database
-        await createAnalysis({
+        const insertResult = await createAnalysis({
           userId: ctx.user.id,
           homeTeamId: 1, // Placeholder
           awayTeamId: 2, // Placeholder
@@ -113,7 +113,13 @@ export const appRouter = router({
           alternativeProjections: alternativeProjections,
         });
 
-        return projections;
+        // Extract analysis ID from insert result
+        const analysisId = (insertResult as any)?.[0]?.insertId || 1;
+
+        return {
+          ...projections,
+          analysisId,
+        };
       }),
 
     /**
@@ -133,7 +139,14 @@ export const appRouter = router({
         if (!analysis) {
           throw new Error("Análise não encontrada");
         }
-        return analysis;
+        // Parse ranking data if it's a string
+        const rankingData = typeof analysis.rankingData === 'string' 
+          ? JSON.parse(analysis.rankingData) 
+          : analysis.rankingData;
+        return {
+          ...analysis,
+          rankingData,
+        };
       }),
 
     /**
