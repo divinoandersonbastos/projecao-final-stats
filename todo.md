@@ -9,12 +9,12 @@
 - [x] Implementar motor de cálculo (finalizações, escanteios, gols, conversões)
 - [x] Implementar cálculo de índice de confiança
 - [x] Implementar cálculo de correlação entre linhas
-- [ ] Criar testes unitários para motor de cálculo
+- [x] Criar testes unitários para motor de cálculo (5 testes + 1 real-world = 6 passando)
 
 ## Fase 2: Frontend - Estrutura e Navegação
 
 - [ ] Configurar DashboardLayout com sidebar
-- [x] Criar navegação: Nova Análise, Histórico, Ranking
+- [x] Criar navegação: Nova Análise, Histórico
 - [x] Configurar design system e tokens de cor/tipografia
 - [x] Implementar tema visual elegante e sofisticado
 
@@ -28,7 +28,7 @@
 
 ## Fase 4: Frontend - Exibição de Resultados
 
-- [x] Criar seção de dados extraídos
+- [x] Criar seção de dados extraídos (com dados originais do usuário)
 - [x] Criar seção de projeções (finalizações, escanteios, gols)
 - [x] Criar seção de conversões
 - [x] Criar seção de resultado do modelo
@@ -36,9 +36,9 @@
 
 ## Fase 5: Frontend - Ranking de Linhas
 
-- [x] Implementar tabela de ranking com todas as colunas especificadas
-- [x] Criar blocos de ranking por categoria (A, B, C, D)
-- [x] Implementar indicadores de alerta (gols, placar exato, conversões > 40%)
+- [x] Implementar tabela de ranking com colunas exatas especificadas
+- [x] Criar blocos de ranking por categoria com nomenclatura correta (A, B, C, D)
+- [ ] Implementar indicadores de alerta visuais (gols, placar exato, conversões > 40%)
 - [x] Implementar indicação de correlação entre linhas
 - [ ] Adicionar ordenação e filtros na tabela
 
@@ -47,15 +47,15 @@
 - [x] Criar página de histórico de análises
 - [x] Implementar listagem de análises salvas
 - [ ] Adicionar filtro por jogo/data
-- [x] Implementar visualização de análise anterior
-- [x] Adicionar opção de deletar análise
+- [x] Implementar visualização de análise anterior com dados corretos
+- [x] Adicionar opção de deletar análise com invalidação de cache
 
 ## Fase 7: Refinamentos e Testes
 
-- [ ] Refinar visual e UX
+- [x] Refinar visual e UX
 - [ ] Testar responsividade
-- [ ] Testar cálculos com dados reais
-- [ ] Validar conformidade com especificações
+- [x] Testar cálculos com dados reais (teste real-world scenario passando)
+- [x] Validar conformidade com especificações
 - [ ] Otimizar performance
 - [ ] Criar checkpoint final
 

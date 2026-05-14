@@ -9,10 +9,12 @@ import { ptBR } from "date-fns/locale";
 
 export default function AnalysisHistory() {
   const [, navigate] = useLocation();
+  const utils = trpc.useUtils();
   const { data: analyses, isLoading } = trpc.analysis.list.useQuery();
   const deleteAnalysisMutation = trpc.analysis.delete.useMutation({
     onSuccess: () => {
       toast.success("Análise deletada com sucesso");
+      utils.analysis.list.invalidate();
     },
     onError: (error) => {
       toast.error("Erro ao deletar análise: " + error.message);
