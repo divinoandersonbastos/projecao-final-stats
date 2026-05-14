@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { RankingLine } from "@/types/analysis";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
+import { exportAnalysisToPDF } from "@/lib/pdf-export";
 
 export default function AnalysisDetail() {
   const [, navigate] = useLocation();
   const [match, params] = useRoute("/dashboard/analysis/:id");
+  const [isExporting, setIsExporting] = useState(false);
   const analysisId = params?.id ? parseInt(params.id) : null;
 
   const { data: analysis, isLoading } = trpc.analysis.getById.useQuery(
@@ -57,6 +61,24 @@ export default function AnalysisDetail() {
     );
   }
 
+  const handleExportPDF = async () => {
+    if (!analysis) {
+      toast.error("Análise não carregada");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await exportAnalysisToPDF(analysis);
+      toast.success("PDF exportado com sucesso!");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error("Erro ao exportar PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (!analysis) {
     return (
       <div className="space-y-8">
@@ -77,10 +99,29 @@ export default function AnalysisDetail() {
 
   return (
     <div className="space-y-8">
-      <Button variant="outline" onClick={() => navigate("/dashboard/history")}>
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="outline" onClick={() => navigate("/dashboard/history")}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Voltar
+        </Button>
+        <Button
+          onClick={handleExportPDF}
+          disabled={isExporting}
+          className="gap-2"
+        >
+          {isExporting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Exportando...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              Exportar PDF
+            </>
+          )}
+        </Button>
+      </div>
 
       {/* Header */}
       <div className="space-y-2">

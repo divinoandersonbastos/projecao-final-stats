@@ -78,3 +78,15 @@
 - [x] Adicionar botão de importação na página de Nova Análise
 - [x] Criar testes unitários para scraper (7 testes passando)
 - [x] Implementar leitura de sessionStorage em NewAnalysis.tsx
+
+
+## Fase 10: Exportação em PDF
+
+- [x] Criar serviço de geração de PDF (jsPDF + html2canvas)
+- [x] Implementar template HTML para relatório com todas as seções
+- [x] Adicionar dados extraídos, projeções e ranking ao PDF
+- [x] Criar botão de exportação na página de detalhes
+- [x] Adicionar formatação profissional e branding
+- [x] Criar testes unitários para exportação em PDF (6 testes passando)
+- [x] Instalar e validar dependências (jspdf, html2canvas)
+- [x] Criar checkpoint final com PDF export
