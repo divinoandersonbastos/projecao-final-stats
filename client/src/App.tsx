@@ -11,23 +11,25 @@ import AnalysisHistory from "./pages/AnalysisHistory";
 import Ranking from "./pages/Ranking";
 import AnalysisDetail from "./pages/AnalysisDetail";
 
+function DashboardRouter() {
+  return (
+    <DashboardLayout>
+      <Switch>
+        <Route path={"/dashboard/new"} component={NewAnalysis} />
+        <Route path={"/dashboard/history"} component={AnalysisHistory} />
+        <Route path={"/dashboard/ranking"} component={Ranking} />
+        <Route path={"/dashboard/analysis/:id"} component={AnalysisDetail} />
+        <Route component={NewAnalysis} />
+      </Switch>
+    </DashboardLayout>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/dashboard"}>
-        {() => (
-          <DashboardLayout>
-            <Switch>
-              <Route path={"/dashboard/new"} component={NewAnalysis} />
-              <Route path={"/dashboard/history"} component={AnalysisHistory} />
-              <Route path={"/dashboard/ranking"} component={Ranking} />
-              <Route path={"/dashboard/analysis/:id"} component={AnalysisDetail} />
-              <Route component={NewAnalysis} />
-            </Switch>
-          </DashboardLayout>
-        )}
-      </Route>
+      <Route path={"/dashboard/:rest*"} component={DashboardRouter} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
