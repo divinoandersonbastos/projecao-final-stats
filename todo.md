@@ -98,8 +98,8 @@
 - [x] Implementar parser para tabelas do CraqueStats
 - [x] Extrair dados: finalizações, escanteios, gols, ataques perigosos
 - [x] Criar página de upload de PDFs (PDFImport.tsx)
-- [ ] Pré-preenchimento automático do formulário com dados extraídos
+- [x] Pré-preenchimento automático do formulário com dados extraídos (via sessionStorage)
 - [x] Validar integridade dos dados extraídos
 - [x] Integrar com tRPC procedure para importação (pdfImportRouter)
 - [x] Criar testes unitários para parser de PDF (11 testes passando)
-- [ ] Testar com PDFs reais do CraqueStats
+- [x] Testar com PDFs reais do CraqueStats (6 testes de integração com dados reais)

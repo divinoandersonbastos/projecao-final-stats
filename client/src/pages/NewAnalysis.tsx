@@ -43,6 +43,51 @@ export default function NewAnalysis() {
   const [analysisMode, setAnalysisMode] = useState<"mode1" | "mode2">("mode2");
 
   useEffect(() => {
+    // Check for PDF imported data first
+    const pdfDataStr = sessionStorage.getItem("importedTeamData");
+    if (pdfDataStr) {
+      try {
+        const pdfData = JSON.parse(pdfDataStr);
+        if (pdfData.home && pdfData.away) {
+          setHomeTeam({
+            name: pdfData.home.teamName || "",
+            dangerousAttacksFor: pdfData.home.attacks || 0,
+            dangerousAttacksAgainst: 0,
+            cornersFor: pdfData.home.corners || 0,
+            cornersAgainst: 0,
+            shotsFor: pdfData.home.shots || 0,
+            shotsAgainst: 0,
+            shotsOnTargetFor: pdfData.home.shotsOnTarget || 0,
+            shotsOnTargetAgainst: 0,
+            goalsFor: pdfData.home.goals || 0,
+            goalsAgainst: pdfData.home.goalsAgainst || 0,
+          });
+
+          setAwayTeam({
+            name: pdfData.away.teamName || "",
+            dangerousAttacksFor: pdfData.away.attacks || 0,
+            dangerousAttacksAgainst: 0,
+            cornersFor: pdfData.away.corners || 0,
+            cornersAgainst: 0,
+            shotsFor: pdfData.away.shots || 0,
+            shotsAgainst: 0,
+            shotsOnTargetFor: pdfData.away.shotsOnTarget || 0,
+            shotsOnTargetAgainst: 0,
+            goalsFor: pdfData.away.goals || 0,
+            goalsAgainst: pdfData.away.goalsAgainst || 0,
+          });
+
+          sessionStorage.removeItem("importedTeamData");
+          toast.success("Dados do PDF pré-preenchidos com sucesso!");
+          return;
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do PDF:", error);
+        sessionStorage.removeItem("importedTeamData");
+      }
+    }
+
+    // Check for manual import data
     const importedDataStr = sessionStorage.getItem("importedData");
     if (importedDataStr) {
       try {
