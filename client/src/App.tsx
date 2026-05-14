@@ -16,12 +16,24 @@ function DashboardRouter() {
   return (
     <DashboardLayout>
       <Switch>
-              <Route path={"/dashboard/new"} component={NewAnalysis} />
-              <Route path={"/dashboard/import"} component={ImportFromLink} />
-              <Route path={"/dashboard/history"} component={AnalysisHistory} />
-              <Route path={"/dashboard/ranking"} component={Ranking} />
-              <Route path={"/dashboard/analysis/:id"} component={AnalysisDetail} />
-        <Route component={NewAnalysis} />
+        <Route path="/dashboard/new">
+          <NewAnalysis />
+        </Route>
+        <Route path="/dashboard/import">
+          <ImportFromLink />
+        </Route>
+        <Route path="/dashboard/history">
+          <AnalysisHistory />
+        </Route>
+        <Route path="/dashboard/ranking">
+          <Ranking />
+        </Route>
+        <Route path="/dashboard/analysis/:id">
+          <AnalysisDetail />
+        </Route>
+        <Route>
+          <NewAnalysis />
+        </Route>
       </Switch>
     </DashboardLayout>
   );
@@ -30,11 +42,18 @@ function DashboardRouter() {
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/dashboard/:rest*"} component={DashboardRouter} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
+      <Route path="/">
+        <Home />
+      </Route>
+      <Route path="/dashboard/:rest*">
+        <DashboardRouter />
+      </Route>
+      <Route path="/404">
+        <NotFound />
+      </Route>
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }

@@ -161,12 +161,17 @@ export default function ImportFromLink() {
       <Card className="p-6 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
         <div className="flex gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">Nota importante:</p>
+          <div className="text-sm space-y-2">
+            <p className="font-semibold text-amber-900 dark:text-amber-100">Nota importante:</p>
             <p className="text-amber-800 dark:text-amber-200">
-              Certifique-se de estar logado em sua conta Gmail no CraqueStats antes de usar este recurso. 
-              Se encontrar problemas ao importar, você pode preencher os dados manualmente no formulário.
+              O CraqueStats usa JavaScript dinâmico para carregar dados. Se a importação automática não funcionar:
             </p>
+            <ol className="list-decimal ml-5 text-amber-800 dark:text-amber-200 space-y-1 text-xs">
+              <li>Acesse o link do time no CraqueStats</li>
+              <li>Procure a tabela de estatísticas</li>
+              <li>Copie os valores (Finalizações, Escanteios, Gols, etc)</li>
+              <li>Volte e preencha os campos manualmente</li>
+            </ol>
           </div>
         </div>
       </Card>

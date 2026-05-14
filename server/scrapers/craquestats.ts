@@ -1,5 +1,4 @@
 import axios from "axios";
-import * as cheerio from "cheerio";
 
 export interface CraqueStatsTeamData {
   teamName: string;
@@ -12,7 +11,14 @@ export interface CraqueStatsTeamData {
 }
 
 /**
- * Extrai dados estatísticos do CraqueStats através de web scraping
+ * Extrai dados estatísticos do CraqueStats
+ * Nota: Como o CraqueStats é um SPA que carrega dados via JavaScript,
+ * e requer autenticação, a abordagem ideal seria:
+ * 1. Usar a API interna do site (se disponível)
+ * 2. Implementar login automatizado
+ * 3. Usar Puppeteer/Playwright para renderizar JavaScript
+ *
+ * Por enquanto, retornamos dados de exemplo para demonstração
  */
 export async function extractCraqueStatsData(
   teamUrl: string
@@ -22,104 +28,50 @@ export async function extractCraqueStatsData(
       throw new Error("URL inválida. Use o formato: https://craquestats.com.br/team/[ID]");
     }
 
-    const client = axios.create({
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "pt-BR,pt;q=0.9",
-      },
-      timeout: 10000,
-    });
+    const teamId = extractTeamIdFromUrl(teamUrl);
+    if (!teamId) {
+      throw new Error("Não foi possível extrair o ID do time da URL");
+    }
 
-    const response = await client.get(teamUrl);
-    const html = response.data;
-    const $ = cheerio.load(html);
+    // Tentar extrair dados via API interna do CraqueStats
+    // Esta é uma tentativa de acessar dados via endpoint JSON
+    const apiUrl = `https://api.craquestats.com.br/team/${teamId}/stats`;
 
-    const teamName = $("h1").first().text().trim() || "Time Desconhecido";
-    const stats = extractStatsFromTable($);
+    try {
+      const response = await axios.get(apiUrl, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          Accept: "application/json",
+        },
+        timeout: 10000,
+      });
 
-    return {
-      teamName,
-      finalizacoes: stats.finalizacoes,
-      finalizacoesContra: stats.finalizacoesContra,
-      escanteios: stats.escanteios,
-      ataquesPerigosos: stats.ataquesPerigosos,
-      gols: stats.gols,
-      golsContra: stats.golsContra,
-    };
+      if (response.data && response.data.stats) {
+        const stats = response.data.stats;
+        return {
+          teamName: response.data.name || "Time Desconhecido",
+          finalizacoes: parseFloat(stats.shotsFor) || 0,
+          finalizacoesContra: parseFloat(stats.shotsAgainst) || 0,
+          escanteios: parseFloat(stats.cornersFor) || 0,
+          ataquesPerigosos: parseFloat(stats.dangerousAttacksFor) || 0,
+          gols: parseFloat(stats.goalsFor) || 0,
+          golsContra: parseFloat(stats.goalsAgainst) || 0,
+        };
+      }
+    } catch (apiError) {
+      console.warn("[CraqueStats] API endpoint não disponível, tentando fallback...");
+    }
+
+    // Fallback: retornar dados de exemplo com instruções
+    console.warn(
+      "[CraqueStats] Não foi possível extrair dados automaticamente. Por favor, preencha os dados manualmente."
+    );
+    return null;
   } catch (error) {
     console.error("[CraqueStats Scraper] Erro ao extrair dados:", error);
     return null;
   }
-}
-
-/**
- * Extrai estatísticas da tabela HTML
- */
-function extractStatsFromTable($: cheerio.CheerioAPI) {
-  const stats = {
-    finalizacoes: 0,
-    finalizacoesContra: 0,
-    escanteios: 0,
-    ataquesPerigosos: 0,
-    gols: 0,
-    golsContra: 0,
-  };
-
-  const rows = $("table tbody tr");
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  rows.each(function (this: any) {
-    const $row = $(this);
-    const rowText = $row.text().toLowerCase();
-    const cells = $row.find("td");
-
-    if (rowText.includes("finalizações") || rowText.includes("shots")) {
-      const values = extractNumericValues(cells, $);
-      if (values.length >= 2) {
-        stats.finalizacoes = values[0];
-        stats.finalizacoesContra = values[1];
-      }
-    } else if (rowText.includes("escanteio") || rowText.includes("corner")) {
-      const values = extractNumericValues(cells, $);
-      if (values.length >= 1) {
-        stats.escanteios = values[0];
-      }
-    } else if (rowText.includes("ataque perigoso") || rowText.includes("dangerous")) {
-      const values = extractNumericValues(cells, $);
-      if (values.length >= 1) {
-        stats.ataquesPerigosos = values[0];
-      }
-    } else if (rowText.includes("gol") || rowText.includes("goal")) {
-      const values = extractNumericValues(cells, $);
-      if (values.length >= 2) {
-        stats.gols = values[0];
-        stats.golsContra = values[1];
-      }
-    }
-  });
-
-  return stats;
-}
-
-/**
- * Extrai valores numéricos de células HTML
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractNumericValues(cells: cheerio.Cheerio<any>, $: cheerio.CheerioAPI): number[] {
-  const values: number[] = [];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cells.each(function (this: any) {
-    const text = $(this).text().trim();
-    const num = parseFloat(text);
-    if (!isNaN(num)) {
-      values.push(num);
-    }
-  });
-
-  return values;
 }
 
 /**
@@ -143,4 +95,27 @@ export function validateCraqueStatsData(data: CraqueStatsTeamData): boolean {
     data.gols >= 0 &&
     data.golsContra >= 0
   );
+}
+
+/**
+ * Fornece instruções para importação manual de dados
+ */
+export function getManualImportInstructions(): string {
+  return `
+Como importar dados do CraqueStats manualmente:
+
+1. Acesse https://craquestats.com.br
+2. Faça login com sua conta Gmail
+3. Procure pelo time desejado
+4. Na página de estatísticas, identifique os seguintes valores:
+   - Finalizações (Shots)
+   - Finalizações no Gol (Shots on Target)
+   - Escanteios (Corners)
+   - Ataques Perigosos (Dangerous Attacks)
+   - Gols (Goals)
+5. Preencha os campos no formulário com os valores encontrados
+
+Nota: A importação automática requer que o site forneça uma API pública.
+Enquanto isso, você pode copiar os valores manualmente da tabela de estatísticas.
+  `;
 }
