@@ -5,14 +5,33 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { FileUp, ArrowLeft, Loader2 } from "lucide-react";
+import { FileUp, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+
+interface ExtractedTeamData {
+  teamName: string;
+  attacks: number;
+  attacksAgainst: number;
+  corners: number;
+  cornersAgainst: number;
+  shots: number;
+  shotsAgainst: number;
+  shotsOnTarget: number;
+  shotsOnTargetAgainst: number;
+  goals: number;
+  goalsAgainst: number;
+}
 
 export default function PDFImport() {
   const [, navigate] = useLocation();
   const [homeFile, setHomeFile] = useState<File | null>(null);
   const [awayFile, setAwayFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<string>("");
+  const [homeResult, setHomeResult] = useState<ExtractedTeamData | null>(null);
+  const [awayResult, setAwayResult] = useState<ExtractedTeamData | null>(null);
+
+  const importBothMutation = trpc.pdfImport.importBothTeams.useMutation();
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -24,12 +43,32 @@ export default function PDFImport() {
         toast.error("Por favor, selecione um arquivo PDF");
         return;
       }
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error("O arquivo PDF deve ter no máximo 20MB");
+        return;
+      }
       if (teamType === "home") {
         setHomeFile(file);
+        setHomeResult(null);
       } else {
         setAwayFile(file);
+        setAwayResult(null);
       }
     }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data:application/pdf;base64, prefix
+        const base64 = result.split(",")[1] || "";
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleImport = async () => {
@@ -39,191 +78,260 @@ export default function PDFImport() {
     }
 
     setLoading(true);
+    setProgress("Convertendo PDFs...");
+    setHomeResult(null);
+    setAwayResult(null);
+
     try {
-      // Convert files to base64 for transmission
-      const homeBase64 = await fileToBase64(homeFile);
-      const awayBase64 = await fileToBase64(awayFile);
+      // Convert both files to base64
+      setProgress("Preparando PDFs para envio...");
+      const [homeBase64, awayBase64] = await Promise.all([
+        fileToBase64(homeFile),
+        fileToBase64(awayFile),
+      ]);
 
-      // Call tRPC procedure to extract data
-      // Note: In production, you would upload files to a server endpoint
-      // and pass the file paths to the tRPC procedure
-      // For now, we'll simulate the extraction with mock data
+      setProgress("Enviando PDFs para análise via IA... (pode levar até 30 segundos)");
 
-      const mockHomeData = {
-        teamName: homeFile.name.replace(".pdf", "").split("_")[0] || "Time Mandante",
-        attacks: 6.1,
-        corners: 4.7,
-        shots: 15.6,
-        shotsOnTarget: 6.1,
-        goals: 1.5,
-        goalsAgainst: 1.8,
-      };
+      // Send both PDFs to backend for OCR extraction
+      const result = await importBothMutation.mutateAsync({
+        homePdfBase64: homeBase64,
+        awayPdfBase64: awayBase64,
+        homeFileName: homeFile.name,
+        awayFileName: awayFile.name,
+      });
 
-      const mockAwayData = {
-        teamName: awayFile.name.replace(".pdf", "").split("_")[0] || "Time Visitante",
-        attacks: 3.1,
-        corners: 4.5,
-        shots: 6.8,
-        shotsOnTarget: 3.1,
-        goals: 1.8,
-        goalsAgainst: 0.8,
-      };
+      if (result.success && result.data) {
+        setHomeResult(result.data.home);
+        setAwayResult(result.data.away);
+        setProgress("");
 
-      // Store data in sessionStorage for NewAnalysis page
-      sessionStorage.setItem(
-        "importedTeamData",
-        JSON.stringify({
-          home: mockHomeData,
-          away: mockAwayData,
-        })
-      );
+        // Store data in sessionStorage for NewAnalysis page
+        sessionStorage.setItem(
+          "importedTeamData",
+          JSON.stringify({
+            home: result.data.home,
+            away: result.data.away,
+          })
+        );
 
-      toast.success("Dados importados com sucesso!");
-
-      // Navigate to new analysis with pre-filled data
-      setTimeout(() => {
-        navigate("/dashboard/new");
-      }, 500);
+        toast.success(result.message || "Dados extraídos com sucesso!");
+      } else {
+        setProgress("");
+        toast.error(result.message || "Falha ao extrair dados dos PDFs");
+      }
     } catch (error) {
-      toast.error("Erro ao importar PDFs");
-      console.error(error);
+      setProgress("");
+      const errorMsg = error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error("Erro ao importar PDFs: " + errorMsg);
+      console.error("PDF import error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result.split(",")[1] || "");
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const handleNavigateToAnalysis = () => {
+    navigate("/dashboard/new");
   };
 
+  const StatPreview = ({ label, value }: { label: string; value: number }) => (
+    <div className="flex justify-between items-center py-1 border-b border-slate-100 last:border-0">
+      <span className="text-xs text-slate-500">{label}</span>
+      <span className="text-sm font-semibold text-slate-800">{value.toFixed(1)}</span>
+    </div>
+  );
+
+  const TeamResultCard = ({
+    title,
+    data,
+    isHome,
+  }: {
+    title: string;
+    data: ExtractedTeamData;
+    isHome: boolean;
+  }) => (
+    <Card className={`p-4 border-2 ${isHome ? "border-blue-200 bg-blue-50/50" : "border-orange-200 bg-orange-50/50"}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <CheckCircle2 className={`w-5 h-5 ${isHome ? "text-blue-600" : "text-orange-600"}`} />
+        <h4 className="font-semibold text-slate-800">{data.teamName}</h4>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${isHome ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
+          {title}
+        </span>
+      </div>
+      <div className="space-y-0.5">
+        <StatPreview label="Ataques Perigosos (A Favor)" value={data.attacks} />
+        <StatPreview label="Ataques Perigosos (Contra)" value={data.attacksAgainst} />
+        <StatPreview label="Escanteios (A Favor)" value={data.corners} />
+        <StatPreview label="Escanteios (Contra)" value={data.cornersAgainst} />
+        <StatPreview label="Finalizações (A Favor)" value={data.shots} />
+        <StatPreview label="Finalizações (Contra)" value={data.shotsAgainst} />
+        <StatPreview label="Finalizações no Gol (A Favor)" value={data.shotsOnTarget} />
+        <StatPreview label="Finalizações no Gol (Contra)" value={data.shotsOnTargetAgainst} />
+        <StatPreview label="Gols (A Favor)" value={data.goals} />
+        <StatPreview label="Gols (Contra)" value={data.goalsAgainst} />
+      </div>
+    </Card>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate("/dashboard/new")}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </button>
-          <h1 className="text-3xl font-bold text-slate-900">Importar PDFs do CraqueStats</h1>
-          <p className="text-slate-600 mt-2">
-            Faça upload dos PDFs com as estatísticas dos times para pré-preenchimento automático
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <button
+          onClick={() => navigate("/dashboard/new")}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para Nova Análise
+        </button>
+        <h1 className="text-2xl font-bold text-foreground">Importar PDFs do CraqueStats</h1>
+        <p className="text-muted-foreground mt-1">
+          Faça upload dos PDFs com as estatísticas dos times para extração automática via IA
+        </p>
+      </div>
 
-        {/* Upload Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Home Team */}
-          <Card className="p-6 border-2 border-dashed border-slate-300 hover:border-blue-400 transition">
-            <Label className="block mb-4">
-              <span className="text-sm font-semibold text-slate-700 mb-2 block">
-                Time Mandante
+      {/* Upload Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Home Team */}
+        <Card className="p-5 border-2 border-dashed border-slate-300 hover:border-blue-400 transition">
+          <span className="text-sm font-semibold text-slate-700 mb-3 block">
+            PDF do Time Mandante
+          </span>
+          <div className="relative">
+            <Input
+              type="file"
+              accept=".pdf"
+              onChange={(e) => handleFileChange(e, "home")}
+              className="hidden"
+              id="home-pdf"
+              disabled={loading}
+            />
+            <label
+              htmlFor="home-pdf"
+              className={`flex flex-col items-center justify-center p-6 cursor-pointer rounded-lg transition ${
+                homeFile ? "bg-blue-50 border border-blue-200" : "bg-slate-50 hover:bg-blue-50"
+              } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <FileUp className={`w-7 h-7 mb-2 ${homeFile ? "text-blue-500" : "text-slate-400"}`} />
+              <span className="text-sm text-slate-600 text-center">
+                {homeFile ? homeFile.name : "Clique para selecionar PDF"}
               </span>
-              <div className="relative">
-                <Input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => handleFileChange(e, "home")}
-                  className="hidden"
-                  id="home-pdf"
-                  disabled={loading}
-                />
-                <label
-                  htmlFor="home-pdf"
-                  className="flex flex-col items-center justify-center p-8 cursor-pointer rounded-lg bg-slate-50 hover:bg-blue-50 transition"
-                >
-                  <FileUp className="w-8 h-8 text-slate-400 mb-2" />
-                  <span className="text-sm text-slate-600">
-                    {homeFile ? homeFile.name : "Clique para selecionar PDF"}
-                  </span>
-                </label>
-              </div>
-            </Label>
-            {homeFile && (
-              <div className="mt-3 p-2 bg-green-50 rounded text-sm text-green-700">
-                ✓ {homeFile.name}
-              </div>
-            )}
-          </Card>
-
-          {/* Away Team */}
-          <Card className="p-6 border-2 border-dashed border-slate-300 hover:border-blue-400 transition">
-            <Label className="block mb-4">
-              <span className="text-sm font-semibold text-slate-700 mb-2 block">
-                Time Visitante
-              </span>
-              <div className="relative">
-                <Input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => handleFileChange(e, "away")}
-                  className="hidden"
-                  id="away-pdf"
-                  disabled={loading}
-                />
-                <label
-                  htmlFor="away-pdf"
-                  className="flex flex-col items-center justify-center p-8 cursor-pointer rounded-lg bg-slate-50 hover:bg-blue-50 transition"
-                >
-                  <FileUp className="w-8 h-8 text-slate-400 mb-2" />
-                  <span className="text-sm text-slate-600">
-                    {awayFile ? awayFile.name : "Clique para selecionar PDF"}
-                  </span>
-                </label>
-              </div>
-            </Label>
-            {awayFile && (
-              <div className="mt-3 p-2 bg-green-50 rounded text-sm text-green-700">
-                ✓ {awayFile.name}
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Instructions */}
-        <Card className="p-6 bg-blue-50 border border-blue-200 mb-8">
-          <h3 className="font-semibold text-blue-900 mb-3">Como usar:</h3>
-          <ol className="space-y-2 text-sm text-blue-800">
-            <li>1. Acesse <a href="https://craquestats.com.br" target="_blank" rel="noopener noreferrer" className="underline font-semibold">craquestats.com.br</a></li>
-            <li>2. Faça login com sua conta Gmail</li>
-            <li>3. Acesse a página de estatísticas de cada time</li>
-            <li>4. Faça screenshot ou exporte como PDF</li>
-            <li>5. Selecione os PDFs acima e clique em "Importar"</li>
-          </ol>
+              {homeFile && (
+                <span className="text-xs text-blue-600 mt-1">
+                  {(homeFile.size / 1024).toFixed(0)} KB
+                </span>
+              )}
+            </label>
+          </div>
         </Card>
 
-        {/* Action Button */}
+        {/* Away Team */}
+        <Card className="p-5 border-2 border-dashed border-slate-300 hover:border-orange-400 transition">
+          <span className="text-sm font-semibold text-slate-700 mb-3 block">
+            PDF do Time Visitante
+          </span>
+          <div className="relative">
+            <Input
+              type="file"
+              accept=".pdf"
+              onChange={(e) => handleFileChange(e, "away")}
+              className="hidden"
+              id="away-pdf"
+              disabled={loading}
+            />
+            <label
+              htmlFor="away-pdf"
+              className={`flex flex-col items-center justify-center p-6 cursor-pointer rounded-lg transition ${
+                awayFile ? "bg-orange-50 border border-orange-200" : "bg-slate-50 hover:bg-orange-50"
+              } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <FileUp className={`w-7 h-7 mb-2 ${awayFile ? "text-orange-500" : "text-slate-400"}`} />
+              <span className="text-sm text-slate-600 text-center">
+                {awayFile ? awayFile.name : "Clique para selecionar PDF"}
+              </span>
+              {awayFile && (
+                <span className="text-xs text-orange-600 mt-1">
+                  {(awayFile.size / 1024).toFixed(0)} KB
+                </span>
+              )}
+            </label>
+          </div>
+        </Card>
+      </div>
+
+      {/* Progress */}
+      {loading && progress && (
+        <Card className="p-4 bg-blue-50 border border-blue-200">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+            <div>
+              <p className="text-sm font-medium text-blue-900">{progress}</p>
+              <p className="text-xs text-blue-700 mt-0.5">
+                A IA está analisando as imagens dos PDFs para extrair os dados estatísticos
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Results Preview */}
+      {(homeResult || awayResult) && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            Dados Extraídos
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {homeResult && (
+              <TeamResultCard title="Mandante" data={homeResult} isHome={true} />
+            )}
+            {awayResult && (
+              <TeamResultCard title="Visitante" data={awayResult} isHome={false} />
+            )}
+          </div>
+          <Button
+            onClick={handleNavigateToAnalysis}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-5 text-base font-semibold rounded-lg transition"
+          >
+            Usar Dados Extraídos na Análise
+          </Button>
+        </div>
+      )}
+
+      {/* Instructions */}
+      <Card className="p-5 bg-amber-50 border border-amber-200">
+        <h3 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" />
+          Como obter os PDFs:
+        </h3>
+        <ol className="space-y-1.5 text-sm text-amber-800">
+          <li>1. Acesse <a href="https://craquestats.com.br" target="_blank" rel="noopener noreferrer" className="underline font-semibold">craquestats.com.br</a></li>
+          <li>2. Faça login e acesse a página de estatísticas do time</li>
+          <li>3. Configure os filtros (Casa/Visitante, Jogo completo, etc.)</li>
+          <li>4. Use "Imprimir como PDF" (Ctrl+P) ou faça screenshot e salve como PDF</li>
+          <li>5. Selecione os PDFs acima e clique em "Extrair Dados"</li>
+        </ol>
+      </Card>
+
+      {/* Action Button */}
+      {!homeResult && !awayResult && (
         <Button
           onClick={handleImport}
           disabled={!homeFile || !awayFile || loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg font-semibold rounded-lg transition disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 text-base font-semibold rounded-lg transition disabled:opacity-50"
         >
           {loading ? (
             <>
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Importando...
+              Extraindo dados via IA...
             </>
           ) : (
-            "Importar Dados dos PDFs"
+            <>
+              <FileUp className="w-5 h-5 mr-2" />
+              Extrair Dados dos PDFs
+            </>
           )}
         </Button>
-
-        {/* Info */}
-        <p className="text-center text-sm text-slate-600 mt-6">
-          Os dados serão extraídos automaticamente e pré-preenchidos no formulário de análise
-        </p>
-      </div>
+      )}
     </div>
   );
 }

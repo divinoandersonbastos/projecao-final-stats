@@ -131,3 +131,14 @@
 - [x] Atualizar testes de integração para cobrir PDFs scaneados (5 testes estruturais)
 - [x] Integrar parser OCR no router tRPC de PDF import
 - [x] Criar checkpoint com suporte a PDFs scaneados
+
+## Fase 14: Correção do Fluxo de Importação de PDF (Bug Report)
+
+- [x] Visualizar PDFs reais para entender formato exato dos dados
+- [x] Verificar fluxo completo de upload no frontend (PDFImport.tsx) - PROBLEMA: usava dados MOCK
+- [x] Verificar fluxo de processamento no backend (pdf-import router) - PROBLEMA: esperava filePath, não base64
+- [x] Reescrever PDFImport.tsx para enviar PDFs reais ao backend via base64
+- [x] Reescrever pdf-import router para aceitar base64 e chamar LLM Vision
+- [x] Testar end-to-end: LLM extrai dados corretamente (Flamengo: 15.6 fin, 4.7 esc, 1.8 gols)
+- [x] Validar que valores extraídos correspondem aos dados reais do PDF (Vitória: 10.7 fin, 4.5 esc, 2.3 gols)
+- [x] Criar testes unitários para novo router (6 testes passando)
