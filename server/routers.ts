@@ -6,10 +6,12 @@ import { z } from "zod";
 import { calculateProjections, TeamData } from "./calculations";
 import { createAnalysis, getUserAnalyses, getAnalysisById, deleteAnalysis } from "./db";
 import { importRouter } from "./routers/import";
+import { pdfImportRouter } from "./routers/pdf-import";
 
 export const appRouter = router({
   system: systemRouter,
   import: importRouter,
+  pdfImport: pdfImportRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

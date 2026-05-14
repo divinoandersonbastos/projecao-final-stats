@@ -10,7 +10,8 @@ import NewAnalysis from "./pages/NewAnalysis";
 import AnalysisHistory from "./pages/AnalysisHistory";
 import Ranking from "./pages/Ranking";
 import AnalysisDetail from "./pages/AnalysisDetail";
-import ImportFromLink from "./pages/ImportFromLink";
+import ImportFromLink from "@/pages/ImportFromLink";
+import PDFImport from "@/pages/PDFImport";
 
 function DashboardRouter() {
   return (
@@ -21,6 +22,9 @@ function DashboardRouter() {
         </Route>
         <Route path="/dashboard/import">
           <ImportFromLink />
+        </Route>
+        <Route path="/dashboard/pdf-import">
+          <PDFImport />
         </Route>
         <Route path="/dashboard/history">
           <AnalysisHistory />
