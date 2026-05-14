@@ -43,7 +43,7 @@ export default function AnalysisHistory() {
           <p className="text-muted-foreground mb-4">
             Comece criando uma nova análise para ver o histórico aqui.
           </p>
-          <Button onClick={() => navigate("/dashboard/new")}>
+          <Button onClick={() => navigate("/new")}>
             Criar Nova Análise
           </Button>
         </Card>
@@ -87,7 +87,7 @@ export default function AnalysisHistory() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigate(`/dashboard/analysis/${analysis.id}`)}
+                  onClick={() => navigate(`/analysis/${analysis.id}`)}
                   className="gap-2"
                 >
                   <Eye className="w-4 h-4" />
@@ -113,7 +113,7 @@ export default function AnalysisHistory() {
         ))}
       </div>
 
-      <Button onClick={() => navigate("/dashboard/new")} className="w-full">
+      <Button onClick={() => navigate("/new")} className="w-full">
         Criar Nova Análise
       </Button>
     </div>

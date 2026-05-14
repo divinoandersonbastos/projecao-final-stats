@@ -134,7 +134,7 @@ export default function NewAnalysis() {
   const createAnalysisMutation = trpc.analysis.create.useMutation({
     onSuccess: (data) => {
       toast.success("Análise criada com sucesso!");
-      navigate("/dashboard/analysis/" + (data as any).analysisId);
+      navigate("/analysis/" + (data as any).analysisId);
     },
     onError: (error) => {
       toast.error("Erro ao criar análise: " + error.message);
@@ -321,7 +321,7 @@ export default function NewAnalysis() {
             Insira os dados estatísticos dos dois times para gerar uma projeção completa da partida.
           </p>
         </div>
-        <Link href="/dashboard/import">
+        <Link href="/import">
           <Button variant="outline" className="whitespace-nowrap">
             <LinkIcon className="w-4 h-4 mr-2" />
             Importar do CraqueStats
@@ -365,7 +365,7 @@ export default function NewAnalysis() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/dashboard/history")}
+            onClick={() => navigate("/history")}
           >
             Cancelar
           </Button>

@@ -106,7 +106,7 @@ export default function Ranking() {
 
   return (
     <div className="space-y-8">
-      <Button variant="outline" onClick={() => navigate("/dashboard/history")}>
+      <Button variant="outline" onClick={() => navigate("/history")}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Voltar
       </Button>

@@ -17,22 +17,22 @@ function DashboardRouter() {
   return (
     <DashboardLayout>
       <Switch>
-        <Route path="/dashboard/new">
+        <Route path="/new">
           <NewAnalysis />
         </Route>
-        <Route path="/dashboard/import">
+        <Route path="/import">
           <ImportFromLink />
         </Route>
-        <Route path="/dashboard/pdf-import">
+        <Route path="/pdf-import">
           <PDFImport />
         </Route>
-        <Route path="/dashboard/history">
+        <Route path="/history">
           <AnalysisHistory />
         </Route>
-        <Route path="/dashboard/ranking">
+        <Route path="/ranking">
           <Ranking />
         </Route>
-        <Route path="/dashboard/analysis/:id">
+        <Route path="/analysis/:id">
           <AnalysisDetail />
         </Route>
         <Route>
@@ -49,7 +49,7 @@ function Router() {
       <Route path="/">
         <Home />
       </Route>
-      <Route path="/dashboard/:rest*">
+      <Route path="/dashboard" nest>
         <DashboardRouter />
       </Route>
       <Route path="/404">

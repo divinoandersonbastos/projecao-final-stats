@@ -60,7 +60,7 @@ export default function ImportFromLink() {
 
       sessionStorage.setItem("importedData", JSON.stringify(result));
       toast.success("Dados importados com sucesso!");
-      navigate("/dashboard/new");
+      navigate("/new");
     } catch (error) {
       toast.error("Erro ao importar dados. Use a aba 'Entrada Manual' para preencher os dados.");
       setIsLoadingUrl(false);
@@ -104,7 +104,7 @@ export default function ImportFromLink() {
 
     sessionStorage.setItem("importedData", JSON.stringify(importedData));
     toast.success("Dados preenchidos com sucesso!");
-    navigate("/dashboard/new");
+    navigate("/new");
   };
 
   const copyTemplateToClipboard = () => {
@@ -132,7 +132,7 @@ Gols contra: [valor]`;
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate("/dashboard/new")}
+          onClick={() => navigate("/new")}
           className="p-2 hover:bg-muted rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

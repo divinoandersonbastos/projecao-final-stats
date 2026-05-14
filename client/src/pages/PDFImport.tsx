@@ -130,7 +130,7 @@ export default function PDFImport() {
   };
 
   const handleNavigateToAnalysis = () => {
-    navigate("/dashboard/new");
+    navigate("/new");
   };
 
   const StatPreview = ({ label, value }: { label: string; value: number }) => (
@@ -177,7 +177,7 @@ export default function PDFImport() {
       {/* Header */}
       <div>
         <button
-          onClick={() => navigate("/dashboard/new")}
+          onClick={() => navigate("/new")}
           className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition"
         >
           <ArrowLeft className="w-4 h-4" />

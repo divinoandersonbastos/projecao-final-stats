@@ -28,10 +28,10 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: Plus, label: "Nova Análise", path: "/dashboard/new" },
-  { icon: FileUp, label: "Importar PDF", path: "/dashboard/pdf-import" },
-  { icon: BarChart3, label: "Histórico", path: "/dashboard/history" },
-  { icon: TrendingUp, label: "Ranking", path: "/dashboard/ranking" },
+  { icon: Plus, label: "Nova Análise", path: "/new" },
+  { icon: FileUp, label: "Importar PDF", path: "/pdf-import" },
+  { icon: BarChart3, label: "Histórico", path: "/history" },
+  { icon: TrendingUp, label: "Ranking", path: "/ranking" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

@@ -12,7 +12,7 @@ import { exportAnalysisToPDF } from "@/lib/pdf-export";
 
 export default function AnalysisDetail() {
   const [, navigate] = useLocation();
-  const [match, params] = useRoute("/dashboard/analysis/:id");
+  const [match, params] = useRoute("/analysis/:id");
   const [isExporting, setIsExporting] = useState(false);
   const analysisId = params?.id ? parseInt(params.id) : null;
 
@@ -82,7 +82,7 @@ export default function AnalysisDetail() {
   if (!analysis) {
     return (
       <div className="space-y-8">
-        <Button variant="outline" onClick={() => navigate("/dashboard/history")}>
+        <Button variant="outline" onClick={() => navigate("/history")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>
@@ -100,7 +100,7 @@ export default function AnalysisDetail() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={() => navigate("/dashboard/history")}>
+        <Button variant="outline" onClick={() => navigate("/history")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>

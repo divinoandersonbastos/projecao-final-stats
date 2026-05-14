@@ -142,3 +142,13 @@
 - [x] Testar end-to-end: LLM extrai dados corretamente (Flamengo: 15.6 fin, 4.7 esc, 1.8 gols)
 - [x] Validar que valores extraídos correspondem aos dados reais do PDF (Vitória: 10.7 fin, 4.5 esc, 2.3 gols)
 - [x] Criar testes unitários para novo router (6 testes passando)
+
+## Bug: 404 ao navegar para /dashboard/analysis/:id após criar análise
+
+- [x] Investigar por que /dashboard/analysis/90001 retorna 404
+  - Causa raiz: wouter v3.7 com regexparam `:rest*` não casa com múltiplos segmentos de URL
+  - `/dashboard/:rest*` gera regex `[^/]+?` que só captura 1 segmento
+- [x] Corrigir rota no App.tsx: usar `<Route path="/dashboard" nest>` para sub-router
+- [x] Atualizar AnalysisDetail.tsx para usar useRoute("/analysis/:id")
+- [x] Atualizar todas as navegações (navigate) para usar caminhos relativos dentro do sub-router
+- [x] Testar navegação completa: sidebar, ver análise, voltar, ranking - tudo funcional
