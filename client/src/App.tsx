@@ -5,10 +5,11 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
+import Home from "./pages/Home";
 import NewAnalysis from "./pages/NewAnalysis";
 import AnalysisHistory from "./pages/AnalysisHistory";
+import Ranking from "./pages/Ranking";
 import AnalysisDetail from "./pages/AnalysisDetail";
-import Home from "./pages/Home";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
             <Switch>
               <Route path={"/dashboard/new"} component={NewAnalysis} />
               <Route path={"/dashboard/history"} component={AnalysisHistory} />
+              <Route path={"/dashboard/ranking"} component={Ranking} />
               <Route path={"/dashboard/analysis/:id"} component={AnalysisDetail} />
               <Route component={NewAnalysis} />
             </Switch>

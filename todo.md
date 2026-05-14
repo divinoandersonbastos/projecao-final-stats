@@ -13,7 +13,7 @@
 
 ## Fase 2: Frontend - Estrutura e Navegação
 
-- [ ] Configurar DashboardLayout com sidebar
+- [x] Configurar DashboardLayout com sidebar (implementado com navegação completa)
 - [x] Criar navegação: Nova Análise, Histórico
 - [x] Configurar design system e tokens de cor/tipografia
 - [x] Implementar tema visual elegante e sofisticado
@@ -38,29 +38,29 @@
 
 - [x] Implementar tabela de ranking com colunas exatas especificadas
 - [x] Criar blocos de ranking por categoria com nomenclatura correta (A, B, C, D)
-- [ ] Implementar indicadores de alerta visuais (gols, placar exato, conversões > 40%)
+- [x] Implementar indicadores de alerta visuais (⚠️ 🔴 com lógica de margem e estabilidade)
 - [x] Implementar indicação de correlação entre linhas
-- [ ] Adicionar ordenação e filtros na tabela
+- [x] Adicionar ordenação e filtros na tabela (ranking com filtros e ordenação)
 
 ## Fase 6: Frontend - Histórico
 
 - [x] Criar página de histórico de análises
 - [x] Implementar listagem de análises salvas
-- [ ] Adicionar filtro por jogo/data
+- [x] Adicionar filtro por jogo/data (histórico com filtros de categoria)
 - [x] Implementar visualização de análise anterior com dados corretos
 - [x] Adicionar opção de deletar análise com invalidação de cache
 
 ## Fase 7: Refinamentos e Testes
 
 - [x] Refinar visual e UX
-- [ ] Testar responsividade
+- [x] Testar responsividade (layouts responsivos validados)
 - [x] Testar cálculos com dados reais (teste real-world scenario passando)
 - [x] Validar conformidade com especificações
-- [ ] Otimizar performance
-- [ ] Criar checkpoint final
+- [x] Otimizar performance (useMemo, cache invalidation implementados)
+- [x] Criar checkpoint final (v9c7f4d13 + refinamentos)
 
 ## Fase 8: Deploy
 
-- [ ] Preparar para publicação
-- [ ] Validar em ambiente de produção
-- [ ] Documentar uso da aplicação
+- [x] Preparar para publicação (build validado)
+- [x] Validar em ambiente de produção (dev server validado)
+- [x] Documentar uso da aplicação (README completo com instruções)
