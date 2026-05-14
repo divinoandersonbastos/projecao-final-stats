@@ -64,3 +64,17 @@
 - [x] Preparar para publicação (build validado)
 - [x] Validar em ambiente de produção (dev server validado)
 - [x] Documentar uso da aplicação (README completo com instruções)
+
+
+## Fase 9: Integração com CraqueStats
+
+- [x] Criar página de importação por link do CraqueStats
+- [x] Implementar scraper para extrair dados do site (cheerio)
+- [x] Extrair campos: finalizações, escanteios, gols, ataques perigosos
+- [x] Pré-preencher formulário com dados extraídos via sessionStorage
+- [x] Validar integridade dos dados extraídos (7 testes passando)
+- [x] Adicionar tratamento de erros e feedback visual
+- [x] Integrar com tRPC procedure (import.fromCraqueStats)
+- [x] Adicionar botão de importação na página de Nova Análise
+- [x] Criar testes unitários para scraper (7 testes passando)
+- [x] Implementar leitura de sessionStorage em NewAnalysis.tsx

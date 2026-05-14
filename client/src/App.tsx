@@ -10,15 +10,17 @@ import NewAnalysis from "./pages/NewAnalysis";
 import AnalysisHistory from "./pages/AnalysisHistory";
 import Ranking from "./pages/Ranking";
 import AnalysisDetail from "./pages/AnalysisDetail";
+import ImportFromLink from "./pages/ImportFromLink";
 
 function DashboardRouter() {
   return (
     <DashboardLayout>
       <Switch>
-        <Route path={"/dashboard/new"} component={NewAnalysis} />
-        <Route path={"/dashboard/history"} component={AnalysisHistory} />
-        <Route path={"/dashboard/ranking"} component={Ranking} />
-        <Route path={"/dashboard/analysis/:id"} component={AnalysisDetail} />
+              <Route path={"/dashboard/new"} component={NewAnalysis} />
+              <Route path={"/dashboard/import"} component={ImportFromLink} />
+              <Route path={"/dashboard/history"} component={AnalysisHistory} />
+              <Route path={"/dashboard/ranking"} component={Ranking} />
+              <Route path={"/dashboard/analysis/:id"} component={AnalysisDetail} />
         <Route component={NewAnalysis} />
       </Switch>
     </DashboardLayout>

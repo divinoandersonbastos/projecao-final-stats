@@ -5,9 +5,11 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { calculateProjections, TeamData } from "./calculations";
 import { createAnalysis, getUserAnalyses, getAnalysisById, deleteAnalysis } from "./db";
+import { importRouter } from "./routers/import";
 
 export const appRouter = router({
   system: systemRouter,
+  import: importRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

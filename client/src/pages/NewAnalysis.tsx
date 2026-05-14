@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
-import { Loader2 } from "lucide-react";
+import { useLocation, Link } from "wouter";
+import { Loader2, LinkIcon } from "lucide-react";
 
 interface TeamFormData {
   name: string;
@@ -41,6 +41,50 @@ export default function NewAnalysis() {
   const [homeTeam, setHomeTeam] = useState<TeamFormData>(initialTeamData);
   const [awayTeam, setAwayTeam] = useState<TeamFormData>(initialTeamData);
   const [analysisMode, setAnalysisMode] = useState<"mode1" | "mode2">("mode2");
+
+  useEffect(() => {
+    const importedDataStr = sessionStorage.getItem("importedData");
+    if (importedDataStr) {
+      try {
+        const importedData = JSON.parse(importedDataStr);
+        if (importedData.success && importedData.homeTeam && importedData.awayTeam) {
+          setHomeTeam({
+            name: importedData.homeTeam.name || "",
+            dangerousAttacksFor: importedData.homeTeam.ataquesPerigosos || 0,
+            dangerousAttacksAgainst: 0,
+            cornersFor: importedData.homeTeam.escanteios || 0,
+            cornersAgainst: 0,
+            shotsFor: importedData.homeTeam.finalizacoes || 0,
+            shotsAgainst: importedData.homeTeam.finalizacoesContra || 0,
+            shotsOnTargetFor: importedData.homeTeam.finalizacoesNoGol || 0,
+            shotsOnTargetAgainst: 0,
+            goalsFor: importedData.homeTeam.gols || 0,
+            goalsAgainst: importedData.homeTeam.golsContra || 0,
+          });
+
+          setAwayTeam({
+            name: importedData.awayTeam.name || "",
+            dangerousAttacksFor: importedData.awayTeam.ataquesPerigosos || 0,
+            dangerousAttacksAgainst: 0,
+            cornersFor: importedData.awayTeam.escanteios || 0,
+            cornersAgainst: 0,
+            shotsFor: importedData.awayTeam.finalizacoes || 0,
+            shotsAgainst: importedData.awayTeam.finalizacoesContra || 0,
+            shotsOnTargetFor: importedData.awayTeam.finalizacoesNoGol || 0,
+            shotsOnTargetAgainst: 0,
+            goalsFor: importedData.awayTeam.gols || 0,
+            goalsAgainst: importedData.awayTeam.golsContra || 0,
+          });
+
+          sessionStorage.removeItem("importedData");
+          toast.success("Dados importados pré-preenchidos com sucesso!");
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados importados:", error);
+        sessionStorage.removeItem("importedData");
+      }
+    }
+  }, []);
 
   const createAnalysisMutation = trpc.analysis.create.useMutation({
     onSuccess: (data) => {
@@ -225,11 +269,19 @@ export default function NewAnalysis() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Nova Análise</h1>
-        <p className="text-muted-foreground">
-          Insira os dados estatísticos dos dois times para gerar uma projeção completa da partida.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Nova Análise</h1>
+          <p className="text-muted-foreground">
+            Insira os dados estatísticos dos dois times para gerar uma projeção completa da partida.
+          </p>
+        </div>
+        <Link href="/dashboard/import">
+          <Button variant="outline" className="whitespace-nowrap">
+            <LinkIcon className="w-4 h-4 mr-2" />
+            Importar do CraqueStats
+          </Button>
+        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
