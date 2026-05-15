@@ -4,11 +4,12 @@ import { ENV } from "../_core/env";
  * API-Football integration service
  * Docs: https://www.api-football.com/documentation-v3
  * 
- * Free plan limitations:
- * - Seasons: 2022 to 2024 only
- * - No `last` parameter
- * - Requires league + season for fixture searches
- * - 100 requests/day
+ * Capabilities:
+ * - Live fixtures: /fixtures?live=all
+ * - Today fixtures: /fixtures?date=YYYY-MM-DD
+ * - Fixture by ID: /fixtures?id={id}
+ * - Statistics: /fixtures/statistics?fixture={id}
+ * - 7,500 requests/day
  */
 
 interface ApiFootballResponse<T> {
@@ -77,11 +78,16 @@ export interface SearchResult {
   id: number;
   date: string;
   homeTeam: string;
+  homeTeamLogo: string;
   awayTeam: string;
+  awayTeamLogo: string;
   homeGoals: number | null;
   awayGoals: number | null;
   league: string;
+  leagueLogo: string;
   status: string;
+  statusShort: string;
+  elapsed: number | null;
   fixtureId: number;
 }
 
@@ -103,21 +109,19 @@ export interface ExtractedMatchStats {
   awayPossession: number | null;
   homeXg: number | null;
   awayXg: number | null;
+  homeFouls: number | null;
+  awayFouls: number | null;
+  homePasses: number | null;
+  awayPasses: number | null;
+  homePassAccuracy: number | null;
+  awayPassAccuracy: number | null;
+  homeTackles: number | null;
+  awayTackles: number | null;
+  homeGkSaves: number | null;
+  awayGkSaves: number | null;
   status: string;
+  statusShort: string;
 }
-
-// Brazilian leagues commonly used
-const BRAZILIAN_LEAGUES = [
-  { id: 71, name: "Serie A" },
-  { id: 72, name: "Serie B" },
-  { id: 73, name: "Copa Do Brasil" },
-  { id: 75, name: "Serie C" },
-  { id: 13, name: "CONMEBOL Libertadores" },
-  { id: 11, name: "CONMEBOL Sudamericana" },
-];
-
-// Available seasons for free plan
-const AVAILABLE_SEASONS = [2024, 2023, 2022];
 
 async function apiRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<ApiFootballResponse<T>> {
   const url = new URL(endpoint, ENV.apiFootballUrl);
@@ -136,127 +140,131 @@ async function apiRequest<T>(endpoint: string, params: Record<string, string> = 
   return response.json() as Promise<ApiFootballResponse<T>>;
 }
 
-/**
- * Search for team ID by name
- */
-async function findTeamId(teamName: string): Promise<{ id: number; name: string } | null> {
-  const data = await apiRequest<Array<{ team: { id: number; name: string } }>>("/teams", {
-    search: teamName,
-  });
-
-  if (data.results === 0) return null;
-
-  // Try to find exact match first
-  const normalized = normalizeTeamName(teamName);
-  const exactMatch = data.response.find(
-    (t) => normalizeTeamName(t.team.name) === normalized
-  );
-  if (exactMatch) return exactMatch.team;
-
-  // Try partial match
-  const partialMatch = data.response.find(
-    (t) => normalizeTeamName(t.team.name).includes(normalized) || normalized.includes(normalizeTeamName(t.team.name))
-  );
-  if (partialMatch) return partialMatch.team;
-
-  // Return first result
-  return data.response[0].team;
+function fixtureToSearchResult(f: FixtureResult): SearchResult {
+  return {
+    id: f.fixture.id,
+    date: f.fixture.date,
+    homeTeam: f.teams.home.name,
+    homeTeamLogo: f.teams.home.logo,
+    awayTeam: f.teams.away.name,
+    awayTeamLogo: f.teams.away.logo,
+    homeGoals: f.goals.home,
+    awayGoals: f.goals.away,
+    league: f.league.name,
+    leagueLogo: f.league.logo,
+    status: f.fixture.status.long,
+    statusShort: f.fixture.status.short,
+    elapsed: f.fixture.status.elapsed,
+    fixtureId: f.fixture.id,
+  };
 }
 
 /**
- * Search for fixtures by team names
- * Uses league + season + date range (compatible with free plan)
+ * Get all live fixtures currently being played
+ */
+export async function getLiveFixtures(): Promise<SearchResult[]> {
+  const data = await apiRequest<FixtureResult[]>("/fixtures", {
+    live: "all",
+  });
+
+  return data.response.map(fixtureToSearchResult);
+}
+
+/**
+ * Get all fixtures for a specific date (default: today)
+ */
+export async function getFixturesByDate(date?: string): Promise<SearchResult[]> {
+  const targetDate = date || new Date().toISOString().split("T")[0];
+  
+  const data = await apiRequest<FixtureResult[]>("/fixtures", {
+    date: targetDate,
+  });
+
+  return data.response.map(fixtureToSearchResult);
+}
+
+/**
+ * Search fixtures by team name for today or a specific date
+ * Filters live/today fixtures by team name match
  */
 export async function searchFixtures(
   homeTeam: string,
-  awayTeam: string,
-  dateFrom?: string,
-  dateTo?: string
+  awayTeam?: string,
+  date?: string
 ): Promise<SearchResult[]> {
-  // Find team IDs
-  const homeTeamData = await findTeamId(homeTeam);
-  if (!homeTeamData) {
-    throw new Error(`Time não encontrado: ${homeTeam}`);
-  }
-
-  const allResults: SearchResult[] = [];
-
-  // Search across available seasons and Brazilian leagues
-  for (const season of AVAILABLE_SEASONS) {
-    for (const league of BRAZILIAN_LEAGUES) {
-      const params: Record<string, string> = {
-        team: homeTeamData.id.toString(),
-        league: league.id.toString(),
-        season: season.toString(),
-        status: "FT",
-      };
-
-      // If date range provided, use it
-      if (dateFrom) params.from = dateFrom;
-      if (dateTo) params.to = dateTo;
-
-      // If no date range, search last 3 months of the season
-      if (!dateFrom && !dateTo) {
-        const yearEnd = season;
-        params.from = `${yearEnd}-01-01`;
-        params.to = `${yearEnd}-12-31`;
-      }
-
-      try {
-        const fixturesData = await apiRequest<FixtureResult[]>("/fixtures", params);
-
-        if (fixturesData.results > 0) {
-          const results = fixturesData.response.map((f) => ({
-            id: f.fixture.id,
-            date: f.fixture.date,
-            homeTeam: f.teams.home.name,
-            awayTeam: f.teams.away.name,
-            homeGoals: f.goals.home,
-            awayGoals: f.goals.away,
-            league: `${f.league.name} ${f.league.season}`,
-            status: f.fixture.status.long,
-            fixtureId: f.fixture.id,
-          }));
-          allResults.push(...results);
-        }
-      } catch {
-        // Skip errors for specific league/season combos
-        continue;
-      }
-
-      // Stop if we have enough results
-      if (allResults.length >= 20) break;
+  // Get today's fixtures (or specific date)
+  const targetDate = date || new Date().toISOString().split("T")[0];
+  const todayFixtures = await getFixturesByDate(targetDate);
+  
+  // Also get live fixtures to include in-progress games
+  let liveFixtures: SearchResult[] = [];
+  if (!date) {
+    try {
+      liveFixtures = await getLiveFixtures();
+    } catch {
+      // Ignore live fixture errors
     }
-    if (allResults.length >= 20) break;
   }
 
-  // Filter by away team name if possible
-  const awayNormalized = normalizeTeamName(awayTeam);
-  const filtered = allResults.filter((f) => {
-    const awayName = normalizeTeamName(f.awayTeam);
-    const homeName = normalizeTeamName(f.homeTeam);
-    return (
-      awayName.includes(awayNormalized) ||
-      awayNormalized.includes(awayName) ||
-      homeName.includes(awayNormalized) ||
-      awayNormalized.includes(homeName)
-    );
+  // Merge and deduplicate
+  const allFixtures = [...todayFixtures];
+  for (const live of liveFixtures) {
+    if (!allFixtures.find(f => f.fixtureId === live.fixtureId)) {
+      allFixtures.push(live);
+    }
+  }
+
+  // Filter by team names
+  const homeNorm = normalizeTeamName(homeTeam);
+  const awayNorm = awayTeam ? normalizeTeamName(awayTeam) : null;
+
+  const filtered = allFixtures.filter((f) => {
+    const fHome = normalizeTeamName(f.homeTeam);
+    const fAway = normalizeTeamName(f.awayTeam);
+
+    // Check if home team matches either side
+    const homeMatch = fHome.includes(homeNorm) || homeNorm.includes(fHome) ||
+                      fAway.includes(homeNorm) || homeNorm.includes(fAway);
+
+    if (!homeMatch) return false;
+
+    // If away team specified, check it too
+    if (awayNorm) {
+      const awayMatch = fHome.includes(awayNorm) || awayNorm.includes(fHome) ||
+                        fAway.includes(awayNorm) || awayNorm.includes(fAway);
+      return awayMatch;
+    }
+
+    return true;
   });
 
-  // Sort by date descending (most recent first)
-  const sortByDate = (a: SearchResult, b: SearchResult) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime();
+  // Sort: live first, then by date
+  const sortFixtures = (a: SearchResult, b: SearchResult) => {
+    const aLive = isLiveStatus(a.statusShort) ? 0 : 1;
+    const bLive = isLiveStatus(b.statusShort) ? 0 : 1;
+    if (aLive !== bLive) return aLive - bLive;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  };
 
-  // Return filtered results if any, otherwise all results for manual selection
-  if (filtered.length > 0) {
-    return filtered.sort(sortByDate);
-  }
+  // Return only matched fixtures, never return all 300+ unrelated fixtures
+  return filtered.sort(sortFixtures);
+}
 
-  return allResults.sort(sortByDate);
+/**
+ * Get fixture by ID (basic info)
+ */
+export async function getFixtureById(fixtureId: number): Promise<FixtureResult | null> {
+  const data = await apiRequest<FixtureResult[]>("/fixtures", {
+    id: fixtureId.toString(),
+  });
+
+  if (data.results === 0) return null;
+  return data.response[0];
 }
 
 /**
  * Get fixture statistics by fixture ID
+ * Works for finished games and live games (stats update in real-time)
  */
 export async function getFixtureStats(fixtureId: number): Promise<ExtractedMatchStats> {
   const data = await apiRequest<FixtureResult[]>("/fixtures", {
@@ -269,7 +277,7 @@ export async function getFixtureStats(fixtureId: number): Promise<ExtractedMatch
 
   const fixture = data.response[0];
 
-  // Now get statistics
+  // Get statistics
   const statsData = await apiRequest<FixtureTeamStats[]>("/fixtures/statistics", {
     fixture: fixtureId.toString(),
   });
@@ -299,20 +307,30 @@ export async function getFixtureStats(fixtureId: number): Promise<ExtractedMatch
     awayPossession: getStatPercentValue(awayStats, "Ball Possession"),
     homeXg: getStatFloatValue(homeStats, "expected_goals"),
     awayXg: getStatFloatValue(awayStats, "expected_goals"),
+    homeFouls: getStatValue(homeStats, "Fouls"),
+    awayFouls: getStatValue(awayStats, "Fouls"),
+    homePasses: getStatValue(homeStats, "Total passes"),
+    awayPasses: getStatValue(awayStats, "Total passes"),
+    homePassAccuracy: getStatPercentValue(homeStats, "Passes accurate"),
+    awayPassAccuracy: getStatPercentValue(awayStats, "Passes accurate"),
+    homeTackles: getStatValue(homeStats, "Tackles"),
+    awayTackles: getStatValue(awayStats, "Tackles"),
+    homeGkSaves: getStatValue(homeStats, "Goalkeeper Saves"),
+    awayGkSaves: getStatValue(awayStats, "Goalkeeper Saves"),
     status: fixture.fixture.status.long,
+    statusShort: fixture.fixture.status.short,
   };
 }
 
 /**
- * Get fixture by ID (basic info without statistics)
+ * Check API status (requests used today)
  */
-export async function getFixtureById(fixtureId: number): Promise<FixtureResult | null> {
-  const data = await apiRequest<FixtureResult[]>("/fixtures", {
-    id: fixtureId.toString(),
-  });
-
-  if (data.results === 0) return null;
-  return data.response[0];
+export async function getApiStatus(): Promise<{ current: number; limit: number }> {
+  const data = await apiRequest<{ account: any; subscription: any; requests: { current: number; limit_day: number } }>("/status");
+  return {
+    current: data.response.requests.current,
+    limit: data.response.requests.limit_day,
+  };
 }
 
 // Helper functions
@@ -322,6 +340,10 @@ function normalizeTeamName(name: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "");
+}
+
+function isLiveStatus(statusShort: string): boolean {
+  return ["1H", "2H", "HT", "ET", "P", "BT", "LIVE"].includes(statusShort);
 }
 
 function getStatValue(teamStats: FixtureTeamStats | undefined, type: string): number | null {

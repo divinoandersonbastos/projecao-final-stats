@@ -174,3 +174,17 @@
 - [x] Adicionar filtros no dashboard: Todas, Pendentes, Finalizadas, Validadas
 - [x] Escrever testes unitários para validation-calculator (10 testes passando)
 - [x] Teste end-to-end: Flamengo 3x2 projeção vs 2x2 real - Score 25, 12 métricas avaliadas
+
+## Fase 16: Reformular Validação Pós-Jogo para Dados Ao Vivo
+
+- [x] Investigar API-Football para buscar partidas ao vivo e do dia atual (7500 req/dia)
+- [x] Reescrever api-football.ts para buscar fixtures ao vivo (/fixtures?live=all) e por data
+- [x] Adicionar busca por fixture_id direto (input na UI + FixtureCard para validar)
+- [x] Filtrar resultados apenas pelos times da análise (não retornar 378 jogos)
+- [x] Atualizar router de validação para novo fluxo de busca
+- [x] Implementar entrada manual completa com todos os campos (gols, fin, chutes, esc, ataques, posse, xG, faltas, passes, desarmes, defesas)
+- [x] Reescrever tela de Validação com visual estilo estatísticas ao vivo (barras comparativas)
+- [x] Mostrar comparação lado a lado: projeção vs real com barras visuais
+- [x] Manter filtros por status (Pendentes/Finalizadas/Validadas)
+- [x] Testar fluxo completo end-to-end - 72 testes passando
+- [x] Salvar checkpoint

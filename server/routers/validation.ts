@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { searchFixtures, getFixtureStats } from "../services/api-football";
+import { searchFixtures, getFixtureStats, getLiveFixtures, getFixturesByDate, getApiStatus } from "../services/api-football";
 import { calculateValidation } from "../services/validation-calculator";
 import {
   getAnalysisById,
@@ -15,25 +15,48 @@ import {
 
 export const validationRouter = router({
   /**
-   * Search for fixtures on API-Football by team names
+   * Get live fixtures currently being played
+   */
+  getLiveFixtures: protectedProcedure
+    .query(async () => {
+      return await getLiveFixtures();
+    }),
+
+  /**
+   * Get fixtures for a specific date (default: today)
+   */
+  getFixturesByDate: protectedProcedure
+    .input(z.object({ date: z.string().optional() }))
+    .query(async ({ input }) => {
+      return await getFixturesByDate(input.date);
+    }),
+
+  /**
+   * Search for fixtures by team name (searches today + live)
    */
   searchFixtures: protectedProcedure
     .input(
       z.object({
         homeTeam: z.string().min(1),
-        awayTeam: z.string().min(1),
-        dateFrom: z.string().optional(),
-        dateTo: z.string().optional(),
+        awayTeam: z.string().optional(),
+        date: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const results = await searchFixtures(
         input.homeTeam,
         input.awayTeam,
-        input.dateFrom,
-        input.dateTo
+        input.date
       );
       return results;
+    }),
+
+  /**
+   * Get API status (requests used today)
+   */
+  getApiStatus: protectedProcedure
+    .query(async () => {
+      return await getApiStatus();
     }),
 
   /**
@@ -56,8 +79,10 @@ export const validationRouter = router({
       // Fetch stats from API-Football
       const stats = await getFixtureStats(input.fixtureId);
 
-      if (stats.status !== "Match Finished") {
-        throw new Error(`Partida ainda não finalizada. Status: ${stats.status}`);
+      // Check if game is finished or at least has stats
+      const isFinished = stats.statusShort === "FT" || stats.statusShort === "AET" || stats.statusShort === "PEN";
+      if (!isFinished) {
+        throw new Error(`Partida ainda não finalizada. Status: ${stats.status}. Aguarde o término do jogo para validar.`);
       }
 
       // Save final match stats
@@ -166,6 +191,16 @@ export const validationRouter = router({
         awayDangerousAttacks: z.number().min(0).optional(),
         homePossession: z.number().min(0).max(100).optional(),
         awayPossession: z.number().min(0).max(100).optional(),
+        homeXg: z.number().min(0).optional(),
+        awayXg: z.number().min(0).optional(),
+        homeFouls: z.number().min(0).optional(),
+        awayFouls: z.number().min(0).optional(),
+        homePasses: z.number().min(0).optional(),
+        awayPasses: z.number().min(0).optional(),
+        homeTackles: z.number().min(0).optional(),
+        awayTackles: z.number().min(0).optional(),
+        homeGkSaves: z.number().min(0).optional(),
+        awayGkSaves: z.number().min(0).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -189,6 +224,8 @@ export const validationRouter = router({
         awayDangerousAttacks: input.awayDangerousAttacks ?? null,
         homePossession: input.homePossession ?? null,
         awayPossession: input.awayPossession ?? null,
+        homeXg: input.homeXg ?? null,
+        awayXg: input.awayXg ?? null,
         dataSource: "manual",
       });
 
