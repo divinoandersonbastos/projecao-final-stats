@@ -232,3 +232,19 @@
 - [x] Integrar validação pós-jogo das sugestões (Validada/Push/Não validada com team names da análise)
 - [x] Escrever testes unitários para suggestions-engine.ts (32 testes passando)
 - [x] Verificar no browser: sugestões na AnalysisDetail + validação na Validation page (107/107 testes)
+
+## Fase 20: Detector de Ineficiência de Mercado (Nova Aba)
+
+- [x] Criar página MarketInefficiency.tsx com input para colar linhas de odds
+- [x] Implementar parser de linhas (mercado, linha, odd_mais, odd_exatamente, odd_menos)
+- [x] Implementar cálculo: soma_implícita = 1/odd_mais + 1/odd_exatamente + 1/odd_menos
+- [x] Implementar cálculo: margem_teórica = (1 - soma_implícita) * 100
+- [x] Implementar classificação por status (Alta >10%, Média 5-10%, Baixa 0-5%, Sem ineficiência ≤0%)
+- [x] Implementar classificação por cor (verde forte, verde claro, amarelo, cinza, vermelho)
+- [x] Implementar destaque visual da melhor possibilidade (fundo verde, badge, borda, ícone, negrito)
+- [x] Implementar critérios de desempate (menor soma, maior odd mínima, dados completos, primeira ocorrência)
+- [x] Criar card resumo "Melhor possibilidade detectada" acima da tabela
+- [x] Adicionar mensagem de segurança fixa (não sugere valores, não calcula stake)
+- [x] Adicionar rota /dashboard/market-inefficiency e link na sidebar
+- [x] Escrever testes unitários para a lógica de cálculo (22 testes, 129/129 total passando)
+- [x] Verificar no browser e salvar checkpoint

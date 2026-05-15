@@ -13,6 +13,7 @@ import AnalysisDetail from "./pages/AnalysisDetail";
 import ImportFromLink from "@/pages/ImportFromLink";
 import PDFImport from "@/pages/PDFImport";
 import Validation from "@/pages/Validation";
+import MarketInefficiency from "@/pages/MarketInefficiency";
 
 function DashboardRouter() {
   return (
@@ -38,6 +39,9 @@ function DashboardRouter() {
         </Route>
         <Route path="/validation/:id">
           <Validation />
+        </Route>
+        <Route path="/market-inefficiency">
+          <MarketInefficiency />
         </Route>
         <Route>
           <NewAnalysis />
