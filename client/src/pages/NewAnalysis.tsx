@@ -87,6 +87,22 @@ export default function NewAnalysis() {
       }
     }
 
+    // Check for agenda fixture data (from Agenda page)
+    const agendaFixtureStr = sessionStorage.getItem("agendaFixture");
+    if (agendaFixtureStr) {
+      try {
+        const agendaData = JSON.parse(agendaFixtureStr);
+        setHomeTeam(prev => ({ ...prev, name: agendaData.homeTeam || "" }));
+        setAwayTeam(prev => ({ ...prev, name: agendaData.awayTeam || "" }));
+        sessionStorage.removeItem("agendaFixture");
+        toast.success(`Partida pré-selecionada: ${agendaData.homeTeam} x ${agendaData.awayTeam}`);
+        return;
+      } catch (error) {
+        console.error("Erro ao carregar dados da agenda:", error);
+        sessionStorage.removeItem("agendaFixture");
+      }
+    }
+
     // Check for manual import data
     const importedDataStr = sessionStorage.getItem("importedData");
     if (importedDataStr) {

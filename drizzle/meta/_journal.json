@@ -29,6 +29,20 @@
       "when": 1778806650158,
       "tag": "0003_furry_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1778879835755,
+      "tag": "0004_little_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1778881584181,
+      "tag": "0005_pink_nico_minoru",
+      "breakpoints": true
     }
   ]
 }

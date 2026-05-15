@@ -171,3 +171,39 @@ export const modelValidationResults = mysqlTable("modelValidationResults", {
 
 export type ModelValidationResult = typeof modelValidationResults.$inferSelect;
 export type InsertModelValidationResult = typeof modelValidationResults.$inferInsert;
+
+/**
+ * Fixtures calendar - stores match schedule from API-Football
+ */
+export const fixtures = mysqlTable("fixtures", {
+  id: int("id").autoincrement().primaryKey(),
+  apiFixtureId: int("apiFixtureId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  time: varchar("time", { length: 5 }).notNull(), // HH:MM
+  timezone: varchar("timezone", { length: 64 }).default("America/Sao_Paulo").notNull(),
+  country: varchar("country", { length: 128 }).notNull(),
+  countryCode: varchar("countryCode", { length: 512 }),
+  league: varchar("league", { length: 255 }).notNull(),
+  leagueId: int("leagueId").notNull(),
+  season: int("season"),
+  round: varchar("round", { length: 128 }),
+  homeTeam: varchar("homeTeam", { length: 255 }).notNull(),
+  homeTeamId: int("homeTeamId").notNull(),
+  awayTeam: varchar("awayTeam", { length: 255 }).notNull(),
+  awayTeamId: int("awayTeamId").notNull(),
+  homeLogo: varchar("homeLogo", { length: 512 }),
+  awayLogo: varchar("awayLogo", { length: 512 }),
+  homeScore: int("homeScore"),
+  awayScore: int("awayScore"),
+  status: mysqlEnum("status", ["scheduled", "live", "halftime", "finished", "postponed", "cancelled", "unknown"]).default("scheduled").notNull(),
+  statusShort: varchar("statusShort", { length: 10 }),
+  elapsed: int("elapsed"),
+  hasAnalysis: int("hasAnalysis").default(0).notNull(), // 0 or 1
+  analysisId: int("analysisId"),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Fixture = typeof fixtures.$inferSelect;
+export type InsertFixture = typeof fixtures.$inferInsert;

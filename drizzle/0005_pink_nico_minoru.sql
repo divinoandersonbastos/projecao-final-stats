@@ -1,0 +1,1 @@
+ALTER TABLE `fixtures` MODIFY COLUMN `countryCode` varchar(512);

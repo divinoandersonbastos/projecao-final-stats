@@ -9,6 +9,7 @@ import { importRouter } from "./routers/import";
 import { pdfImportRouter } from "./routers/pdf-import";
 import { validationRouter } from "./routers/validation";
 import { oddsOcrRouter } from "./routers/odds-ocr";
+import { agendaRouter } from "./routers/agenda";
 import { generateSuggestions } from "./services/suggestions-engine";
 
 export const appRouter = router({
@@ -17,6 +18,7 @@ export const appRouter = router({
   pdfImport: pdfImportRouter,
   validation: validationRouter,
   oddsOcr: oddsOcrRouter,
+  agenda: agendaRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

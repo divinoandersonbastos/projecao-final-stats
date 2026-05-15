@@ -259,3 +259,25 @@
 - [x] Preencher textarea com resultado do OCR e rodar análise automaticamente
 - [x] Tratar erros (imagem ilegível, formato não reconhecido)
 - [x] Verificar no browser e salvar checkpoint (129/129 testes)
+
+## Fase 21: Aba Agenda dos Jogos
+
+- [x] Criar tabela fixtures no banco (api_fixture_id, date, time, country, league, teams, status, logos, etc.)
+- [x] Criar serviço agendaService com integração API-Football (getFixturesByDate, getLiveFixtures, syncTodayFixtures)
+- [x] Mapear status da API para status internos (NS→Agendado, LIVE→Ao vivo, HT→Intervalo, FT→Finalizado, PST→Adiado, CANC→Cancelado)
+- [x] Criar procedimentos tRPC: agenda.getByDate, agenda.sync, agenda.getDetails, agenda.createAnalysis
+- [x] Criar componente CalendarSidebar (mês atual, selecionar dia, destacar hoje, avançar/voltar mês)
+- [x] Criar componente StatusFilterTabs (Agendado, Ao vivo, Finalizado, Todos)
+- [x] Criar componente FixtureSearchBar (busca por time, liga, país)
+- [x] Criar componente FixtureCard (país, liga, data, horário, mandante, visitante, escudos, status, botões)
+- [x] Criar componente FixtureStatusBadge (cores por status)
+- [x] Criar componente LeagueGroup (agrupar partidas por liga e país)
+- [x] Criar página Agenda.tsx com layout: calendário esquerda, filtros topo, busca direita, lista centro
+- [x] Implementar fluxo "Criar análise" (botão em jogos agendados redireciona para Nova Análise)
+- [x] Implementar fluxo "Validar pós-jogo" (botão em jogos finalizados)
+- [x] Adicionar filtros por status (Todos/Agendados/Ao Vivo/Intervalo/Finalizados) com contagem
+- [x] Adicionar rota /dashboard/agenda e link na sidebar
+- [x] Escrever testes unitários para agendaService (157/157 testes totais passando)
+- [x] Verificar no browser: 373 jogos carregados, agrupados por liga, filtros e busca funcionando
+- [x] Fix: countryCode varchar(8) → varchar(512) para acomodar URLs de bandeiras da API
+- [x] Fix: BATCH_SIZE reduzido de 50 para 10 para evitar limite de parâmetros SQL
