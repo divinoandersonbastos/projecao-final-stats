@@ -248,3 +248,14 @@
 - [x] Adicionar rota /dashboard/market-inefficiency e link na sidebar
 - [x] Escrever testes unitários para a lógica de cálculo (22 testes, 129/129 total passando)
 - [x] Verificar no browser e salvar checkpoint
+
+## Fase 20.1: Colar Imagem (OCR) no Detector de Ineficiência
+
+- [x] Criar procedimento tRPC oddsOcr.extractFromImage que recebe imagem (base64) e usa LLM vision
+- [x] Prompt LLM: extrair tabela de odds no formato "Mercado | Linha | Odd Mais | Odd Exatamente | Odd Menos"
+- [x] Atualizar frontend: aceitar paste de imagem (Ctrl+V / onPaste) na área de input
+- [x] Mostrar preview da imagem colada com botão "Extrair Odds da Imagem"
+- [x] Exibir loading enquanto LLM processa a imagem
+- [x] Preencher textarea com resultado do OCR e rodar análise automaticamente
+- [x] Tratar erros (imagem ilegível, formato não reconhecido)
+- [x] Verificar no browser e salvar checkpoint (129/129 testes)

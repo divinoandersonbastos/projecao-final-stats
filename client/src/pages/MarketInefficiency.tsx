@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Star, TrendingUp, Info, Trash2 } from "lucide-react";
+import { AlertTriangle, Star, TrendingUp, Info, Trash2, Image, Loader2, X } from "lucide-react";
 import { parseOddsInput, type OddsLine } from "@shared/market-inefficiency";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 // Re-export for backward compatibility
 export { calculateImpliedSum, calculateTheoreticalMargin, classifyStatus, findBestLine, parseOddsInput } from "@shared/market-inefficiency";
@@ -55,8 +57,14 @@ export default function MarketInefficiency() {
   const [input, setInput] = useState("");
   const [analyzed, setAnalyzed] = useState<OddsLine[]>([]);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string>("image/png");
+  const [isExtracting, setIsExtracting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const bestLine = useMemo(() => analyzed.find(l => l.isBest), [analyzed]);
+
+  const extractMutation = trpc.oddsOcr.extractFromImage.useMutation();
 
   function handleAnalyze() {
     const results = parseOddsInput(input);
@@ -68,10 +76,69 @@ export default function MarketInefficiency() {
     setInput("");
     setAnalyzed([]);
     setHasAnalyzed(false);
+    setPastedImage(null);
+  }
+
+  function removePastedImage() {
+    setPastedImage(null);
+  }
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) return;
+
+        setImageMimeType(item.type);
+
+        // Convert to base64 for preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          setPastedImage(dataUrl);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+    }
+  }, []);
+
+  async function handleExtractFromImage() {
+    if (!pastedImage) return;
+
+    setIsExtracting(true);
+    try {
+      // Strip the data:image/...;base64, prefix
+      const base64 = pastedImage.split(",")[1];
+      
+      const result = await extractMutation.mutateAsync({
+        imageBase64: base64,
+        mimeType: imageMimeType,
+      });
+
+      if (result.success && result.data) {
+        setInput(result.data);
+        toast.success("Odds extraídas da imagem com sucesso!");
+        // Auto-analyze
+        const results = parseOddsInput(result.data);
+        setAnalyzed(results);
+        setHasAnalyzed(true);
+      } else {
+        toast.error(result.message || "Não foi possível extrair odds da imagem");
+      }
+    } catch (error: any) {
+      toast.error(`Erro: ${error.message || "Falha ao processar imagem"}`);
+    } finally {
+      setIsExtracting(false);
+    }
   }
 
   return (
-    <div className="container max-w-5xl py-8 space-y-6">
+    <div className="container max-w-5xl py-8 space-y-6" ref={containerRef} onPaste={handlePaste}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Detector de Ineficiência de Mercado</h1>
@@ -80,10 +147,63 @@ export default function MarketInefficiency() {
         </p>
       </div>
 
+      {/* Image Paste Area */}
+      {pastedImage ? (
+        <Card className="border-blue-300 bg-blue-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Image className="w-5 h-5 text-blue-600" />
+                <CardTitle className="text-lg text-blue-800">Imagem Colada</CardTitle>
+              </div>
+              <Button variant="ghost" size="sm" onClick={removePastedImage} className="text-gray-500 hover:text-red-600">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative rounded-lg overflow-hidden border border-blue-200 max-h-[300px] flex items-center justify-center bg-white">
+              <img
+                src={pastedImage}
+                alt="Screenshot colado"
+                className="max-h-[300px] object-contain"
+              />
+            </div>
+            <Button
+              onClick={handleExtractFromImage}
+              disabled={isExtracting}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              {isExtracting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Extraindo odds da imagem...
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Extrair Odds da Imagem
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-dashed border-2 border-gray-300 bg-gray-50/50">
+          <CardContent className="py-6 text-center">
+            <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 font-medium">Cole uma imagem aqui (Ctrl+V)</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Copie a área da tela com as odds e cole diretamente nesta página
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Input Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Inserir Linhas de Odds</CardTitle>
+          <CardTitle className="text-lg">Inserir Linhas de Odds (Texto)</CardTitle>
           <p className="text-sm text-gray-500">
             Cole as linhas no formato: <code className="bg-gray-100 px-1 rounded">Mercado | Linha | Odd Mais | Odd Exatamente | Odd Menos</code>
           </p>
@@ -93,14 +213,14 @@ export default function MarketInefficiency() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={`Exemplo:\nEscanteios | 7 escanteios | 2.15 | 10.00 | 9.00\nGols | Acima 2.5 | 1.85 | 8.50 | 2.10\nChutes | Acima 9.5 | 1.90 | 12.00 | 1.95`}
-            className="min-h-[160px] font-mono text-sm"
+            className="min-h-[120px] font-mono text-sm"
           />
           <div className="flex gap-3">
             <Button onClick={handleAnalyze} disabled={!input.trim()}>
               <TrendingUp className="w-4 h-4 mr-2" />
               Analisar Odds
             </Button>
-            <Button variant="outline" onClick={handleClear} disabled={!input.trim() && !hasAnalyzed}>
+            <Button variant="outline" onClick={handleClear} disabled={!input.trim() && !hasAnalyzed && !pastedImage}>
               <Trash2 className="w-4 h-4 mr-2" />
               Limpar
             </Button>
@@ -299,10 +419,10 @@ export default function MarketInefficiency() {
           <CardContent className="py-6">
             <h3 className="font-medium text-gray-700 mb-3">Como usar</h3>
             <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
-              <li>Cole as linhas de odds no campo acima, uma por linha</li>
+              <li><strong>Opção 1 - Imagem:</strong> Copie a área da tela com as odds (Print Screen / Snipping Tool) e cole aqui com <code className="bg-gray-200 px-1 rounded">Ctrl+V</code></li>
+              <li><strong>Opção 2 - Texto:</strong> Cole as linhas de odds no campo de texto abaixo</li>
               <li>Use o separador <code className="bg-gray-200 px-1 rounded">|</code> ou <code className="bg-gray-200 px-1 rounded">;</code> ou <code className="bg-gray-200 px-1 rounded">tab</code></li>
-              <li>Formato: <code className="bg-gray-200 px-1 rounded">Mercado | Linha | Odd Mais | Odd Exatamente | Odd Menos</code></li>
-              <li>Clique em "Analisar Odds" para ver os resultados</li>
+              <li>Formato texto: <code className="bg-gray-200 px-1 rounded">Mercado | Linha | Odd Mais | Odd Exatamente | Odd Menos</code></li>
             </ol>
             <div className="mt-4 p-3 bg-white border border-gray-200 rounded font-mono text-xs text-gray-600">
               <p className="text-gray-400 mb-1"># Exemplo:</p>

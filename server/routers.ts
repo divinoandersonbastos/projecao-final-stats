@@ -8,6 +8,7 @@ import { createAnalysis, getUserAnalyses, getAnalysisById, deleteAnalysis } from
 import { importRouter } from "./routers/import";
 import { pdfImportRouter } from "./routers/pdf-import";
 import { validationRouter } from "./routers/validation";
+import { oddsOcrRouter } from "./routers/odds-ocr";
 import { generateSuggestions } from "./services/suggestions-engine";
 
 export const appRouter = router({
@@ -15,6 +16,7 @@ export const appRouter = router({
   import: importRouter,
   pdfImport: pdfImportRouter,
   validation: validationRouter,
+  oddsOcr: oddsOcrRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

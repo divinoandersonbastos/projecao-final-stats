@@ -98,8 +98,11 @@ export function parseOddsInput(text: string): OddsLine[] {
       const oddExact = parseFloat(parts[3]);
       const oddUnder = parseFloat(parts[4]);
 
-      if (!isNaN(oddOver) && !isNaN(oddExact) && !isNaN(oddUnder) && oddOver > 0 && oddExact > 0 && oddUnder > 0) {
-        const impliedSum = calculateImpliedSum(oddOver, oddExact, oddUnder);
+      if (!isNaN(oddOver) && !isNaN(oddExact) && !isNaN(oddUnder) && oddOver > 0 && oddUnder > 0) {
+        // Support binary markets (oddExact = 0 means no "exactly" option)
+        const impliedSum = oddExact > 0
+          ? calculateImpliedSum(oddOver, oddExact, oddUnder)
+          : (1 / oddOver) + (1 / oddUnder);
         const theoreticalMargin = calculateTheoreticalMargin(impliedSum);
         results.push({
           market: parts[0],
@@ -118,8 +121,10 @@ export function parseOddsInput(text: string): OddsLine[] {
       const oddExact = parseFloat(parts[2]);
       const oddUnder = parseFloat(parts[3]);
 
-      if (!isNaN(oddOver) && !isNaN(oddExact) && !isNaN(oddUnder) && oddOver > 0 && oddExact > 0 && oddUnder > 0) {
-        const impliedSum = calculateImpliedSum(oddOver, oddExact, oddUnder);
+      if (!isNaN(oddOver) && !isNaN(oddExact) && !isNaN(oddUnder) && oddOver > 0 && oddUnder > 0) {
+        const impliedSum = oddExact > 0
+          ? calculateImpliedSum(oddOver, oddExact, oddUnder)
+          : (1 / oddOver) + (1 / oddUnder);
         const theoreticalMargin = calculateTheoreticalMargin(impliedSum);
         results.push({
           market: parts[0],
