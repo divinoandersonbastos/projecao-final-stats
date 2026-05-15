@@ -12,6 +12,7 @@ import Ranking from "./pages/Ranking";
 import AnalysisDetail from "./pages/AnalysisDetail";
 import ImportFromLink from "@/pages/ImportFromLink";
 import PDFImport from "@/pages/PDFImport";
+import Validation from "@/pages/Validation";
 
 function DashboardRouter() {
   return (
@@ -34,6 +35,9 @@ function DashboardRouter() {
         </Route>
         <Route path="/analysis/:id">
           <AnalysisDetail />
+        </Route>
+        <Route path="/validation/:id">
+          <Validation />
         </Route>
         <Route>
           <NewAnalysis />

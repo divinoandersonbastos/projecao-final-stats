@@ -7,4 +7,6 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  apiFootballKey: process.env.API_FOOTBALL_KEY ?? "",
+  apiFootballUrl: process.env.API_FOOTBALL_URL ?? "https://v3.football.api-sports.io",
 };

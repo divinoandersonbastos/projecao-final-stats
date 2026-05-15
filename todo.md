@@ -152,3 +152,25 @@
 - [x] Atualizar AnalysisDetail.tsx para usar useRoute("/analysis/:id")
 - [x] Atualizar todas as navegações (navigate) para usar caminhos relativos dentro do sub-router
 - [x] Testar navegação completa: sidebar, ver análise, voltar, ranking - tudo funcional
+
+## Fase 15: Módulo Validação Pós-Jogo
+
+- [x] Configurar API-Football (v3.football.api-sports.io) - plano gratuito 100 req/dia
+- [x] Criar tabela final_match_stats no banco de dados
+- [x] Criar tabela model_validation_results no banco de dados
+- [x] Adicionar campo fixture_id e status à tabela analyses
+- [x] Implementar integração com API-Football (busca por time + liga + temporada)
+- [x] Extrair dados: gols, finalizações, chutes no gol, escanteios, ataques perigosos, posse, xG
+- [x] Salvar dados finais na tabela final_match_stats
+- [x] Implementar cálculo de erro absoluto (projeção - real)
+- [x] Implementar cálculo de erro percentual
+- [x] Implementar classificação: Excelente (<=10%), Bom (10-20%), Médio (20-35%), Divergente (>35%)
+- [x] Calcular score geral do modelo (0-100)
+- [x] Salvar resultados na tabela model_validation_results
+- [x] Criar procedures tRPC: searchFixtures, fetchAndSaveStats, saveManualStats, getResult, listByStatus
+- [x] Criar tela "Validação Pós-Jogo" no frontend com abas API/Manual
+- [x] Mostrar: projeção pré-jogo, resultado final real, erro por métrica, status por métrica, score geral
+- [x] Atualizar histórico da análise com resultado final e botão "Validar"
+- [x] Adicionar filtros no dashboard: Todas, Pendentes, Finalizadas, Validadas
+- [x] Escrever testes unitários para validation-calculator (10 testes passando)
+- [x] Teste end-to-end: Flamengo 3x2 projeção vs 2x2 real - Score 25, 12 métricas avaliadas

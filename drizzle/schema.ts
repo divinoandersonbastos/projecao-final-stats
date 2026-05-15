@@ -93,6 +93,10 @@ export const analyses = mysqlTable("analyses", {
   
   // Alternative projections
   alternativeProjections: json("alternativeProjections").notNull(),
+
+  // Post-match validation fields
+  fixtureId: int("fixtureId"),
+  validationStatus: mysqlEnum("validationStatus", ["pending", "finished", "validated"]).default("pending").notNull(),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -100,3 +104,70 @@ export const analyses = mysqlTable("analyses", {
 
 export type Analysis = typeof analyses.$inferSelect;
 export type InsertAnalysis = typeof analyses.$inferInsert;
+
+/**
+ * Final match stats - stores real post-match statistics from API-Football
+ */
+export const finalMatchStats = mysqlTable("finalMatchStats", {
+  id: int("id").autoincrement().primaryKey(),
+  analysisId: int("analysisId").notNull(),
+  fixtureId: int("fixtureId"),
+
+  // Real match results
+  homeGoals: int("homeGoals").notNull(),
+  awayGoals: int("awayGoals").notNull(),
+  homeShots: int("homeShots"),
+  awayShots: int("awayShots"),
+  homeShotsOnTarget: int("homeShotsOnTarget"),
+  awayShotsOnTarget: int("awayShotsOnTarget"),
+  homeCorners: int("homeCorners"),
+  awayCorners: int("awayCorners"),
+  homeDangerousAttacks: int("homeDangerousAttacks"),
+  awayDangerousAttacks: int("awayDangerousAttacks"),
+  homePossession: decimal("homePossession", { precision: 5, scale: 2 }),
+  awayPossession: decimal("awayPossession", { precision: 5, scale: 2 }),
+  homeXg: decimal("homeXg", { precision: 5, scale: 2 }),
+  awayXg: decimal("awayXg", { precision: 5, scale: 2 }),
+
+  // Source of data
+  dataSource: mysqlEnum("dataSource", ["api-football", "manual"]).default("manual").notNull(),
+
+  // Raw API response for reference
+  rawApiData: json("rawApiData"),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FinalMatchStats = typeof finalMatchStats.$inferSelect;
+export type InsertFinalMatchStats = typeof finalMatchStats.$inferInsert;
+
+/**
+ * Model validation results - stores comparison between projection and real results
+ */
+export const modelValidationResults = mysqlTable("modelValidationResults", {
+  id: int("id").autoincrement().primaryKey(),
+  analysisId: int("analysisId").notNull(),
+  finalMatchStatsId: int("finalMatchStatsId").notNull(),
+
+  // Per-metric validation (stored as JSON array for flexibility)
+  // Each entry: { metric, projected, actual, absoluteError, percentError, classification }
+  metricsValidation: json("metricsValidation").notNull(),
+
+  // Overall model score (0-100)
+  overallScore: decimal("overallScore", { precision: 5, scale: 2 }).notNull(),
+  overallClassification: mysqlEnum("overallClassification", ["excellent", "good", "medium", "divergent"]).notNull(),
+
+  // Summary stats
+  avgAbsoluteError: decimal("avgAbsoluteError", { precision: 10, scale: 4 }).notNull(),
+  avgPercentError: decimal("avgPercentError", { precision: 10, scale: 4 }).notNull(),
+  totalMetrics: int("totalMetrics").notNull(),
+  excellentCount: int("excellentCount").notNull(),
+  goodCount: int("goodCount").notNull(),
+  mediumCount: int("mediumCount").notNull(),
+  divergentCount: int("divergentCount").notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ModelValidationResult = typeof modelValidationResults.$inferSelect;
+export type InsertModelValidationResult = typeof modelValidationResults.$inferInsert;

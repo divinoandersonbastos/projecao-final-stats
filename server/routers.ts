@@ -7,11 +7,13 @@ import { calculateProjections, TeamData } from "./calculations";
 import { createAnalysis, getUserAnalyses, getAnalysisById, deleteAnalysis } from "./db";
 import { importRouter } from "./routers/import";
 import { pdfImportRouter } from "./routers/pdf-import";
+import { validationRouter } from "./routers/validation";
 
 export const appRouter = router({
   system: systemRouter,
   import: importRouter,
   pdfImport: pdfImportRouter,
+  validation: validationRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
