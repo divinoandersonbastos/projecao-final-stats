@@ -188,3 +188,13 @@
 - [x] Manter filtros por status (Pendentes/Finalizadas/Validadas)
 - [x] Testar fluxo completo end-to-end - 72 testes passando
 - [x] Salvar checkpoint
+
+## Fase 17: Reformular Classificação de Status da Validação
+
+- [x] Analisar lógica atual de classificação (Excelente/Bom/Médio/Divergente)
+- [x] Reformular status para indicar positivamente quando projeções acertam (Alcançado/Próximo/Parcial/Não Alcançado)
+- [x] Mostrar claramente quais métricas foram alcançadas vs não alcançadas (card "Métricas Alcançadas" com badges verdes)
+- [x] Atualizar validation-calculator.ts com campo 'achieved' por métrica
+- [x] Atualizar Validation.tsx: OverallScore com label positivo, MetricsTable com ✓/✗ icons, ClassificationBreakdown com badges resumo
+- [x] Atualizar AnalysisHistory.tsx para refletir nova classificação (✓ Alcançada / ≈ Próxima / ~ Parcial / ✗ Não Alcançada)
+- [x] Rodar testes (75/75 passando) e salvar checkpoint

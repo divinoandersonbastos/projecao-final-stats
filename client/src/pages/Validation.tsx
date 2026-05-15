@@ -32,6 +32,7 @@ interface MetricValidation {
   absoluteError: number;
   percentError: number;
   classification: "excellent" | "good" | "medium" | "divergent";
+  achieved?: boolean;
 }
 
 interface ValidationResultData {
@@ -838,37 +839,76 @@ function OverallScore({ result }: { result: ValidationResultData }) {
   const score = parseFloat(result.overallScore);
   const classification = result.overallClassification;
 
+  // Parse metrics to calculate achieved count
+  const metrics: MetricValidation[] =
+    typeof result.metricsValidation === "string"
+      ? JSON.parse(result.metricsValidation)
+      : result.metricsValidation;
+
+  const achievedCount = metrics.filter((m) => m.achieved ?? (m.classification === "excellent" || m.classification === "good")).length;
+  const achievedMetrics = metrics.filter((m) => m.achieved ?? (m.classification === "excellent" || m.classification === "good")).map((m) => m.metricLabel);
+
   const classConfig = {
-    excellent: { color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-200 dark:border-green-800", icon: Trophy, label: "Excelente" },
-    good: { color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", icon: CheckCircle2, label: "Bom" },
-    medium: { color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-950/30", border: "border-yellow-200 dark:border-yellow-800", icon: AlertTriangle, label: "Médio" },
-    divergent: { color: "text-red-600", bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-200 dark:border-red-800", icon: XCircle, label: "Divergente" },
+    excellent: { color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-200 dark:border-green-800", icon: Trophy, label: "Projeção Alcançada", sublabel: "O modelo acertou com precisão" },
+    good: { color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", icon: CheckCircle2, label: "Projeção Próxima", sublabel: "O modelo ficou muito perto do resultado" },
+    medium: { color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", icon: AlertTriangle, label: "Projeção Parcial", sublabel: "O modelo acertou parcialmente" },
+    divergent: { color: "text-red-600", bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-200 dark:border-red-800", icon: XCircle, label: "Projeção Não Alcançada", sublabel: "O modelo divergiu do resultado" },
   };
 
   const config = classConfig[classification];
   const Icon = config.icon;
 
   return (
-    <Card className={`${config.bg} ${config.border} border-2`}>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Icon className={`h-12 w-12 ${config.color}`} />
-            <div>
-              <h2 className="text-2xl font-bold">Score Geral do Modelo</h2>
-              <p className="text-muted-foreground">
-                Erro médio: {parseFloat(result.avgPercentError).toFixed(1)}% |{" "}
-                {result.totalMetrics} métricas avaliadas
-              </p>
+    <div className="space-y-4">
+      {/* Main Score Card */}
+      <Card className={`${config.bg} ${config.border} border-2`}>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <Icon className={`h-12 w-12 ${config.color}`} />
+              <div>
+                <h2 className={`text-2xl font-bold ${config.color}`}>{config.label}</h2>
+                <p className="text-muted-foreground">{config.sublabel}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {achievedCount} de {result.totalMetrics} métricas alcançadas | Erro médio: {parseFloat(result.avgPercentError).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`text-5xl font-bold ${config.color}`}>{score.toFixed(0)}</p>
+              <p className="text-sm text-muted-foreground">pontos</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className={`text-5xl font-bold ${config.color}`}>{score.toFixed(0)}</p>
-            <p className={`text-lg font-semibold ${config.color}`}>{config.label}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Achieved Metrics Summary */}
+      {achievedMetrics.length > 0 && (
+        <Card className="bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-green-700 dark:text-green-400">
+                  Métricas Alcançadas ({achievedCount})
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {achievedMetrics.map((label) => (
+                    <span
+                      key={label}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
@@ -878,18 +918,11 @@ function MetricsTable({ result }: { result: ValidationResultData }) {
       ? JSON.parse(result.metricsValidation)
       : result.metricsValidation;
 
-  const classColors = {
-    excellent: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
-    good: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
-    medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
-    divergent: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
-  };
-
-  const classLabels = {
-    excellent: "Excelente",
-    good: "Bom",
-    medium: "Médio",
-    divergent: "Divergente",
+  const classConfig = {
+    excellent: { colors: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", label: "Alcançado", icon: "✓" },
+    good: { colors: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300", label: "Próximo", icon: "≈" },
+    medium: { colors: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300", label: "Parcial", icon: "~" },
+    divergent: { colors: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", label: "Não Alcançado", icon: "✗" },
   };
 
   return (
@@ -905,28 +938,36 @@ function MetricsTable({ result }: { result: ValidationResultData }) {
                 <th className="text-left py-3 px-2">Métrica</th>
                 <th className="text-center py-3 px-2">Projeção</th>
                 <th className="text-center py-3 px-2">Real</th>
-                <th className="text-center py-3 px-2">Erro Abs.</th>
-                <th className="text-center py-3 px-2">Erro %</th>
+                <th className="text-center py-3 px-2">Erro</th>
                 <th className="text-center py-3 px-2">Status</th>
               </tr>
             </thead>
             <tbody>
-              {metrics.map((m, i) => (
-                <tr key={i} className="border-b hover:bg-muted/50 transition-colors">
-                  <td className="py-3 px-2 font-medium">{m.metricLabel}</td>
-                  <td className="text-center py-3 px-2">{m.projected.toFixed(2)}</td>
-                  <td className="text-center py-3 px-2 font-semibold">{m.actual}</td>
-                  <td className="text-center py-3 px-2">{m.absoluteError.toFixed(2)}</td>
-                  <td className="text-center py-3 px-2">{Math.abs(m.percentError).toFixed(1)}%</td>
-                  <td className="text-center py-3 px-2">
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${classColors[m.classification]}`}
-                    >
-                      {classLabels[m.classification]}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {metrics.map((m, i) => {
+                const isAchieved = m.achieved ?? (m.classification === "excellent" || m.classification === "good");
+                const config = classConfig[m.classification];
+                return (
+                  <tr key={i} className={`border-b transition-colors ${isAchieved ? "bg-green-50/30 dark:bg-green-950/10" : "hover:bg-muted/50"}`}>
+                    <td className="py-3 px-2 font-medium flex items-center gap-2">
+                      {isAchieved && <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />}
+                      {!isAchieved && <XCircle className="h-4 w-4 text-red-400 shrink-0" />}
+                      {m.metricLabel}
+                    </td>
+                    <td className="text-center py-3 px-2">{m.projected.toFixed(1)}</td>
+                    <td className="text-center py-3 px-2 font-bold">{m.actual}</td>
+                    <td className="text-center py-3 px-2">
+                      <span className="text-muted-foreground">{Math.abs(m.percentError).toFixed(1)}%</span>
+                    </td>
+                    <td className="text-center py-3 px-2">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${config.colors}`}
+                      >
+                        {config.icon} {config.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -937,27 +978,51 @@ function MetricsTable({ result }: { result: ValidationResultData }) {
 
 function ClassificationBreakdown({ result }: { result: ValidationResultData }) {
   const total = result.totalMetrics;
+  const achievedTotal = result.excellentCount + result.goodCount;
+  const notAchievedTotal = result.mediumCount + result.divergentCount;
+
   const items = [
-    { label: "Excelente (≤10%)", count: result.excellentCount, color: "bg-green-500" },
-    { label: "Bom (10-20%)", count: result.goodCount, color: "bg-blue-500" },
-    { label: "Médio (20-35%)", count: result.mediumCount, color: "bg-yellow-500" },
-    { label: "Divergente (>35%)", count: result.divergentCount, color: "bg-red-500" },
+    { label: "Alcançado (≤10%)", count: result.excellentCount, color: "bg-green-500", icon: "✓" },
+    { label: "Próximo (10-20%)", count: result.goodCount, color: "bg-blue-500", icon: "≈" },
+    { label: "Parcial (20-35%)", count: result.mediumCount, color: "bg-amber-500", icon: "~" },
+    { label: "Não Alcançado (>35%)", count: result.divergentCount, color: "bg-red-500", icon: "✗" },
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Distribuição das Classificações</CardTitle>
+        <CardTitle>Distribuição dos Resultados</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Summary badges */}
+        <div className="flex gap-4 flex-wrap">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div>
+              <p className="text-lg font-bold text-green-700 dark:text-green-400">{achievedTotal}</p>
+              <p className="text-xs text-green-600">Métricas Positivas</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+            <XCircle className="h-5 w-5 text-red-600" />
+            <div>
+              <p className="text-lg font-bold text-red-700 dark:text-red-400">{notAchievedTotal}</p>
+              <p className="text-xs text-red-600">Métricas a Melhorar</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bar chart */}
         <div className="space-y-3">
           {items.map((item) => (
             <div key={item.label} className="flex items-center gap-3">
-              <span className="text-sm w-40">{item.label}</span>
+              <span className="text-sm w-44 flex items-center gap-1.5">
+                <span className="text-base">{item.icon}</span> {item.label}
+              </span>
               <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-6 overflow-hidden">
                 <div
                   className={`${item.color} h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
-                  style={{ width: total > 0 ? `${(item.count / total) * 100}%` : "0%" }}
+                  style={{ width: total > 0 ? `${Math.max((item.count / total) * 100, item.count > 0 ? 8 : 0)}%` : "0%" }}
                 >
                   {item.count > 0 && (
                     <span className="text-xs text-white font-semibold">{item.count}</span>

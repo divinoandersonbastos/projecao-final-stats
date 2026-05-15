@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateValidation, classifyError } from "./validation-calculator";
+import { calculateValidation, classifyError, isMetricAchieved } from "./validation-calculator";
 
 describe("classifyError", () => {
   it("classifies ≤10% as excellent", () => {
@@ -27,6 +27,18 @@ describe("classifyError", () => {
     expect(classifyError(50)).toBe("divergent");
     expect(classifyError(100)).toBe("divergent");
     expect(classifyError(-80)).toBe("divergent");
+  });
+});
+
+describe("isMetricAchieved", () => {
+  it("marks excellent and good as achieved", () => {
+    expect(isMetricAchieved("excellent")).toBe(true);
+    expect(isMetricAchieved("good")).toBe(true);
+  });
+
+  it("marks medium and divergent as not achieved", () => {
+    expect(isMetricAchieved("medium")).toBe(false);
+    expect(isMetricAchieved("divergent")).toBe(false);
   });
 });
 
@@ -65,6 +77,11 @@ describe("calculateValidation", () => {
     expect(result.overallScore).toBeLessThanOrEqual(100);
     expect(["excellent", "good", "medium", "divergent"]).toContain(result.overallClassification);
     expect(result.excellentCount + result.goodCount + result.mediumCount + result.divergentCount).toBe(result.totalMetrics);
+    
+    // New: achievedCount = excellent + good
+    expect(result.achievedCount).toBe(result.excellentCount + result.goodCount);
+    expect(result.achievedMetrics.length).toBe(result.achievedCount);
+    expect(result.notAchievedMetrics.length).toBe(result.totalMetrics - result.achievedCount);
   });
 
   it("calculates validation with only goals available", () => {
@@ -106,6 +123,10 @@ describe("calculateValidation", () => {
     // Most metrics should be excellent
     expect(result.excellentCount).toBeGreaterThan(result.divergentCount);
     expect(result.overallScore).toBeGreaterThan(70);
+    // All achieved
+    expect(result.achievedCount).toBe(result.totalMetrics);
+    expect(result.achievedMetrics.length).toBe(result.totalMetrics);
+    expect(result.notAchievedMetrics.length).toBe(0);
   });
 
   it("handles completely wrong prediction", () => {
@@ -126,6 +147,8 @@ describe("calculateValidation", () => {
 
     expect(result.divergentCount).toBeGreaterThan(0);
     expect(result.overallScore).toBeLessThan(70);
+    // Most not achieved
+    expect(result.notAchievedMetrics.length).toBeGreaterThan(0);
   });
 
   it("includes correct metric labels with team names", () => {
@@ -166,16 +189,40 @@ describe("calculateValidation", () => {
 
     const result = calculateValidation(projected, actual, "Flamengo", "Vitória");
 
-    // homeGoals: projected 2, actual 2 → 0% error
+    // homeGoals: projected 2, actual 2 → 0% error → achieved
     const homeGoalsMetric = result.metrics.find((m) => m.metric === "homeGoals");
     expect(homeGoalsMetric?.absoluteError).toBe(0);
     expect(homeGoalsMetric?.percentError).toBe(0);
     expect(homeGoalsMetric?.classification).toBe("excellent");
+    expect(homeGoalsMetric?.achieved).toBe(true);
 
-    // awayGoals: projected 1, actual 0 → 100% error (division by zero handled)
+    // awayGoals: projected 1, actual 0 → 100% error → not achieved
     const awayGoalsMetric = result.metrics.find((m) => m.metric === "awayGoals");
     expect(awayGoalsMetric?.absoluteError).toBe(1);
     expect(awayGoalsMetric?.percentError).toBe(100);
     expect(awayGoalsMetric?.classification).toBe("divergent");
+    expect(awayGoalsMetric?.achieved).toBe(false);
+  });
+
+  it("marks metrics with ≤20% error as achieved", () => {
+    const actual = {
+      homeGoals: 2,
+      awayGoals: 1,
+      homeShots: 13, // projected 15, error ~15% → good → achieved
+      awayShots: 10, // projected 10, error 0% → excellent → achieved
+      homeShotsOnTarget: 5, // projected 6, error ~20% → good → achieved
+      awayShotsOnTarget: 3, // projected 3, error 0% → excellent → achieved
+      homeCorners: 5, // projected 5, error 0% → excellent → achieved
+      awayCorners: 4, // projected 4, error 0% → excellent → achieved
+      homeDangerousAttacks: null,
+      awayDangerousAttacks: null,
+    };
+
+    const result = calculateValidation(projected, actual, "Flamengo", "Vitória");
+
+    // All metrics should be achieved (≤20% error)
+    expect(result.achievedCount).toBe(result.totalMetrics);
+    expect(result.achievedMetrics.length).toBe(result.totalMetrics);
+    expect(result.overallClassification).toBe("excellent");
   });
 });

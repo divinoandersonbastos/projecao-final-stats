@@ -155,13 +155,17 @@ export default function AnalysisHistory() {
                         </span>
                       )}
                       {analysis.overallScore != null && analysis.overallClassification && (
-                        <span className={`font-semibold ${
+                        <span className={`inline-flex items-center gap-1 font-semibold ${
                           analysis.overallClassification === "excellent" ? "text-green-600" :
                           analysis.overallClassification === "good" ? "text-blue-600" :
-                          analysis.overallClassification === "medium" ? "text-yellow-600" :
+                          analysis.overallClassification === "medium" ? "text-amber-600" :
                           "text-red-600"
                         }`}>
-                          Score: {parseFloat(String(analysis.overallScore)).toFixed(0)}
+                          {analysis.overallClassification === "excellent" ? "✓ Alcançada" :
+                           analysis.overallClassification === "good" ? "≈ Próxima" :
+                           analysis.overallClassification === "medium" ? "~ Parcial" :
+                           "✗ Não Alcançada"}
+                          <span className="text-xs opacity-75">({parseFloat(String(analysis.overallScore)).toFixed(0)}pts)</span>
                         </span>
                       )}
                       <span className="text-muted-foreground">

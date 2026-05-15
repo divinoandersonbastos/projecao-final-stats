@@ -1,5 +1,13 @@
 /**
  * Validation Calculator - compares projections with real match results
+ * 
+ * Classification system (positive-oriented):
+ * - excellent (≤10% error) = "Alcançado" - Projeção bateu com o resultado real
+ * - good (10-20% error) = "Próximo" - Projeção ficou muito perto do real
+ * - medium (20-35% error) = "Parcial" - Projeção acertou parcialmente
+ * - divergent (>35% error) = "Não Alcançado" - Projeção divergiu do resultado
+ * 
+ * A metric is considered "achieved" if error ≤ 20% (excellent or good)
  */
 
 export interface MetricValidation {
@@ -11,6 +19,7 @@ export interface MetricValidation {
   absoluteError: number;
   percentError: number;
   classification: "excellent" | "good" | "medium" | "divergent";
+  achieved: boolean; // true if error ≤ 20% (excellent or good)
 }
 
 export interface ValidationResult {
@@ -24,6 +33,9 @@ export interface ValidationResult {
   goodCount: number;
   mediumCount: number;
   divergentCount: number;
+  achievedCount: number; // metrics with error ≤ 20%
+  achievedMetrics: string[]; // labels of achieved metrics
+  notAchievedMetrics: string[]; // labels of not achieved metrics
 }
 
 interface ProjectedValues {
@@ -61,6 +73,13 @@ export function classifyError(percentError: number): "excellent" | "good" | "med
   if (absPercent <= 20) return "good";
   if (absPercent <= 35) return "medium";
   return "divergent";
+}
+
+/**
+ * Check if a metric is considered "achieved" (error ≤ 20%)
+ */
+export function isMetricAchieved(classification: "excellent" | "good" | "medium" | "divergent"): boolean {
+  return classification === "excellent" || classification === "good";
 }
 
 /**
@@ -131,6 +150,11 @@ export function calculateValidation(
   const goodCount = metrics.filter((m) => m.classification === "good").length;
   const mediumCount = metrics.filter((m) => m.classification === "medium").length;
   const divergentCount = metrics.filter((m) => m.classification === "divergent").length;
+  
+  // Achieved = excellent + good (error ≤ 20%)
+  const achievedCount = excellentCount + goodCount;
+  const achievedMetrics = metrics.filter((m) => m.achieved).map((m) => m.metricLabel);
+  const notAchievedMetrics = metrics.filter((m) => !m.achieved).map((m) => m.metricLabel);
 
   const avgAbsoluteError = totalMetrics > 0
     ? metrics.reduce((sum, m) => sum + m.absoluteError, 0) / totalMetrics
@@ -158,6 +182,9 @@ export function calculateValidation(
     goodCount,
     mediumCount,
     divergentCount,
+    achievedCount,
+    achievedMetrics,
+    notAchievedMetrics,
   };
 }
 
@@ -172,6 +199,7 @@ function addMetric(
   const absoluteError = Math.round(Math.abs(projected - actual) * 100) / 100;
   const percentError = Math.round(calcPercentError(projected, actual) * 100) / 100;
   const classification = classifyError(percentError);
+  const achieved = isMetricAchieved(classification);
 
   metrics.push({
     metric,
@@ -182,6 +210,7 @@ function addMetric(
     absoluteError,
     percentError,
     classification,
+    achieved,
   });
 }
 
