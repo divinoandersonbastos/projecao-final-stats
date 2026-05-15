@@ -165,7 +165,7 @@ export default function AnalysisHistory() {
                            analysis.overallClassification === "good" ? "≈ Próxima" :
                            analysis.overallClassification === "medium" ? "~ Parcial" :
                            "✗ Não Alcançada"}
-                          <span className="text-xs opacity-75">({parseFloat(String(analysis.overallScore)).toFixed(0)}pts)</span>
+                          <span className="text-xs opacity-75">({parseFloat(String(analysis.overallScore)).toFixed(0)}%)</span>
                         </span>
                       )}
                       <span className="text-muted-foreground">

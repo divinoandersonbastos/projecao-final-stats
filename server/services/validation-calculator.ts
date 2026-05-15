@@ -1,13 +1,15 @@
 /**
  * Validation Calculator - compares projections with real match results
  * 
- * Classification system (positive-oriented):
- * - excellent (≤10% error) = "Alcançado" - Projeção bateu com o resultado real
- * - good (10-20% error) = "Próximo" - Projeção ficou muito perto do real
- * - medium (20-35% error) = "Parcial" - Projeção acertou parcialmente
- * - divergent (>35% error) = "Não Alcançado" - Projeção divergiu do resultado
+ * Classification system (binary):
+ * - "achieved" = Projeção <= Real (o modelo projetou igual ou menos que o real)
+ * - "not_achieved" = Projeção > Real (o modelo projetou mais que o real)
  * 
- * A metric is considered "achieved" if error ≤ 20% (excellent or good)
+ * Overall classification based on percentage of achieved metrics:
+ * - excellent (>=75% achieved) = "Projeção Alcançada"
+ * - good (50-74% achieved) = "Projeção Próxima"
+ * - medium (25-49% achieved) = "Projeção Parcial"
+ * - divergent (<25% achieved) = "Projeção Não Alcançada"
  */
 
 export interface MetricValidation {
@@ -19,7 +21,7 @@ export interface MetricValidation {
   absoluteError: number;
   percentError: number;
   classification: "excellent" | "good" | "medium" | "divergent";
-  achieved: boolean; // true if error ≤ 20% (excellent or good)
+  achieved: boolean; // true if projected <= actual
 }
 
 export interface ValidationResult {
@@ -33,7 +35,7 @@ export interface ValidationResult {
   goodCount: number;
   mediumCount: number;
   divergentCount: number;
-  achievedCount: number; // metrics with error ≤ 20%
+  achievedCount: number; // metrics where projected <= actual
   achievedMetrics: string[]; // labels of achieved metrics
   notAchievedMetrics: string[]; // labels of not achieved metrics
 }
@@ -65,21 +67,21 @@ interface ActualValues {
 }
 
 /**
- * Classify error percentage into quality categories
+ * Classify metric based on whether projection was achieved (projected <= actual)
+ * Maps to DB enum values for backward compatibility
  */
-export function classifyError(percentError: number): "excellent" | "good" | "medium" | "divergent" {
-  const absPercent = Math.abs(percentError);
-  if (absPercent <= 10) return "excellent";
-  if (absPercent <= 20) return "good";
-  if (absPercent <= 35) return "medium";
+export function classifyError(projected: number, actual: number): "excellent" | "good" | "medium" | "divergent" {
+  // New logic: if projected <= actual, it's achieved (excellent)
+  // If projected > actual, it's not achieved (divergent)
+  if (projected <= actual) return "excellent";
   return "divergent";
 }
 
 /**
- * Check if a metric is considered "achieved" (error ≤ 20%)
+ * Check if a metric is considered "achieved" (projected <= actual)
  */
-export function isMetricAchieved(classification: "excellent" | "good" | "medium" | "divergent"): boolean {
-  return classification === "excellent" || classification === "good";
+export function isMetricAchieved(projected: number, actual: number): boolean {
+  return projected <= actual;
 }
 
 /**
@@ -146,13 +148,16 @@ export function calculateValidation(
 
   // Calculate summary
   const totalMetrics = metrics.length;
-  const excellentCount = metrics.filter((m) => m.classification === "excellent").length;
-  const goodCount = metrics.filter((m) => m.classification === "good").length;
-  const mediumCount = metrics.filter((m) => m.classification === "medium").length;
-  const divergentCount = metrics.filter((m) => m.classification === "divergent").length;
+  const achievedCount = metrics.filter((m) => m.achieved).length;
+  const notAchievedCount = metrics.filter((m) => !m.achieved).length;
   
-  // Achieved = excellent + good (error ≤ 20%)
-  const achievedCount = excellentCount + goodCount;
+  // Map to legacy count fields for DB compatibility
+  // achieved = excellent, not achieved = divergent
+  const excellentCount = achievedCount;
+  const goodCount = 0;
+  const mediumCount = 0;
+  const divergentCount = notAchievedCount;
+
   const achievedMetrics = metrics.filter((m) => m.achieved).map((m) => m.metricLabel);
   const notAchievedMetrics = metrics.filter((m) => !m.achieved).map((m) => m.metricLabel);
 
@@ -163,10 +168,9 @@ export function calculateValidation(
     ? metrics.reduce((sum, m) => sum + Math.abs(m.percentError), 0) / totalMetrics
     : 0;
 
-  // Overall score: weighted by classification counts
-  // Excellent = 100pts, Good = 75pts, Medium = 50pts, Divergent = 0pts
+  // Overall score: percentage of achieved metrics (0-100)
   const overallScore = totalMetrics > 0
-    ? ((excellentCount * 100 + goodCount * 75 + mediumCount * 50 + divergentCount * 0) / totalMetrics)
+    ? (achievedCount / totalMetrics) * 100
     : 0;
 
   const overallClassification = classifyOverall(overallScore);
@@ -198,8 +202,8 @@ function addMetric(
 ): void {
   const absoluteError = Math.round(Math.abs(projected - actual) * 100) / 100;
   const percentError = Math.round(calcPercentError(projected, actual) * 100) / 100;
-  const classification = classifyError(percentError);
-  const achieved = isMetricAchieved(classification);
+  const achieved = isMetricAchieved(projected, actual);
+  const classification = classifyError(projected, actual);
 
   metrics.push({
     metric,
@@ -214,9 +218,12 @@ function addMetric(
   });
 }
 
-function classifyOverall(score: number): "excellent" | "good" | "medium" | "divergent" {
-  if (score >= 80) return "excellent";
-  if (score >= 60) return "good";
-  if (score >= 40) return "medium";
+/**
+ * Overall classification based on percentage of achieved metrics
+ */
+function classifyOverall(achievedPercent: number): "excellent" | "good" | "medium" | "divergent" {
+  if (achievedPercent >= 75) return "excellent";
+  if (achievedPercent >= 50) return "good";
+  if (achievedPercent >= 25) return "medium";
   return "divergent";
 }

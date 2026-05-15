@@ -198,3 +198,17 @@
 - [x] Atualizar Validation.tsx: OverallScore com label positivo, MetricsTable com ✓/✗ icons, ClassificationBreakdown com badges resumo
 - [x] Atualizar AnalysisHistory.tsx para refletir nova classificação (✓ Alcançada / ≈ Próxima / ~ Parcial / ✗ Não Alcançada)
 - [x] Rodar testes (75/75 passando) e salvar checkpoint
+
+## Fase 18: Nova Lógica de Classificação (Projeção vs Real)
+
+- [x] Reformular lógica: projeção <= real = "Alcançado", projeção > real = "Não Alcançado"
+- [x] Atualizar validation-calculator.ts com nova regra de classificação binária
+- [x] Manter enum DB (excellent/good/medium/divergent) para compatibilidade, mas mapear para binário no frontend
+- [x] Atualizar OverallScore: mostra X/Y alcançadas, recalcula classificação do % alcançado
+- [x] Atualizar MetricsTable com status binário (Alcançado/Não Alcançado) e "Proj ≤ Real" / "Proj > Real"
+- [x] Atualizar ClassificationBreakdown com distribuição binária e critério explícito
+- [x] Atualizar AnalysisHistory.tsx: score agora mostra % em vez de pts
+- [x] Frontend recalcula achieved de projected vs actual (compatibilidade com dados antigos no DB)
+- [x] Projeção exibida com 2 casas decimais para evitar confusão de arredondamento
+- [x] Atualizar testes unitários para nova lógica (75/75 passando)
+- [x] Rodar testes e salvar checkpoint

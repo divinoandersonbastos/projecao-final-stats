@@ -845,17 +845,22 @@ function OverallScore({ result }: { result: ValidationResultData }) {
       ? JSON.parse(result.metricsValidation)
       : result.metricsValidation;
 
-  const achievedCount = metrics.filter((m) => m.achieved ?? (m.classification === "excellent" || m.classification === "good")).length;
-  const achievedMetrics = metrics.filter((m) => m.achieved ?? (m.classification === "excellent" || m.classification === "good")).map((m) => m.metricLabel);
+  // Recalculate achieved using new binary logic: projected <= actual = achieved
+  const achievedCount = metrics.filter((m) => m.projected <= m.actual).length;
+  const achievedMetrics = metrics.filter((m) => m.projected <= m.actual).map((m) => m.metricLabel);
 
   const classConfig = {
-    excellent: { color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-200 dark:border-green-800", icon: Trophy, label: "Projeção Alcançada", sublabel: "O modelo acertou com precisão" },
-    good: { color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", icon: CheckCircle2, label: "Projeção Próxima", sublabel: "O modelo ficou muito perto do resultado" },
-    medium: { color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", icon: AlertTriangle, label: "Projeção Parcial", sublabel: "O modelo acertou parcialmente" },
-    divergent: { color: "text-red-600", bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-200 dark:border-red-800", icon: XCircle, label: "Projeção Não Alcançada", sublabel: "O modelo divergiu do resultado" },
+    excellent: { color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-200 dark:border-green-800", icon: Trophy, label: "Projeção Alcançada", sublabel: "A maioria das métricas projetadas foram atingidas ou superadas" },
+    good: { color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", icon: CheckCircle2, label: "Projeção Próxima", sublabel: "Metade ou mais das métricas foram atingidas" },
+    medium: { color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", icon: AlertTriangle, label: "Projeção Parcial", sublabel: "Algumas métricas foram atingidas" },
+    divergent: { color: "text-red-600", bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-200 dark:border-red-800", icon: XCircle, label: "Projeção Não Alcançada", sublabel: "A maioria das métricas projetadas não foram atingidas" },
   };
 
-  const config = classConfig[classification];
+  // Recalculate overall classification based on achieved percentage
+  const achievedPercent = result.totalMetrics > 0 ? (achievedCount / result.totalMetrics) * 100 : 0;
+  const recalcClassification = achievedPercent >= 75 ? "excellent" : achievedPercent >= 50 ? "good" : achievedPercent >= 25 ? "medium" : "divergent";
+  
+  const config = classConfig[recalcClassification];
   const Icon = config.icon;
 
   return (
@@ -870,13 +875,13 @@ function OverallScore({ result }: { result: ValidationResultData }) {
                 <h2 className={`text-2xl font-bold ${config.color}`}>{config.label}</h2>
                 <p className="text-muted-foreground">{config.sublabel}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {achievedCount} de {result.totalMetrics} métricas alcançadas | Erro médio: {parseFloat(result.avgPercentError).toFixed(1)}%
+                  {achievedCount} de {result.totalMetrics} métricas alcançadas (projeção ≤ real)
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className={`text-5xl font-bold ${config.color}`}>{score.toFixed(0)}</p>
-              <p className="text-sm text-muted-foreground">pontos</p>
+              <p className={`text-5xl font-bold ${config.color}`}>{achievedCount}/{result.totalMetrics}</p>
+              <p className="text-sm text-muted-foreground">alcançadas</p>
             </div>
           </div>
         </CardContent>
@@ -918,11 +923,9 @@ function MetricsTable({ result }: { result: ValidationResultData }) {
       ? JSON.parse(result.metricsValidation)
       : result.metricsValidation;
 
-  const classConfig = {
-    excellent: { colors: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", label: "Alcançado", icon: "✓" },
-    good: { colors: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300", label: "Próximo", icon: "≈" },
-    medium: { colors: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300", label: "Parcial", icon: "~" },
-    divergent: { colors: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", label: "Não Alcançado", icon: "✗" },
+  const statusConfig = {
+    achieved: { colors: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", label: "Alcançado", icon: "✓" },
+    not_achieved: { colors: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", label: "Não Alcançado", icon: "✗" },
   };
 
   return (
@@ -944,8 +947,8 @@ function MetricsTable({ result }: { result: ValidationResultData }) {
             </thead>
             <tbody>
               {metrics.map((m, i) => {
-                const isAchieved = m.achieved ?? (m.classification === "excellent" || m.classification === "good");
-                const config = classConfig[m.classification];
+                const isAchieved = m.projected <= m.actual;
+                const config = isAchieved ? statusConfig.achieved : statusConfig.not_achieved;
                 return (
                   <tr key={i} className={`border-b transition-colors ${isAchieved ? "bg-green-50/30 dark:bg-green-950/10" : "hover:bg-muted/50"}`}>
                     <td className="py-3 px-2 font-medium flex items-center gap-2">
@@ -953,10 +956,12 @@ function MetricsTable({ result }: { result: ValidationResultData }) {
                       {!isAchieved && <XCircle className="h-4 w-4 text-red-400 shrink-0" />}
                       {m.metricLabel}
                     </td>
-                    <td className="text-center py-3 px-2">{m.projected.toFixed(1)}</td>
+                    <td className="text-center py-3 px-2">{m.projected.toFixed(2)}</td>
                     <td className="text-center py-3 px-2 font-bold">{m.actual}</td>
                     <td className="text-center py-3 px-2">
-                      <span className="text-muted-foreground">{Math.abs(m.percentError).toFixed(1)}%</span>
+                      <span className={isAchieved ? "text-green-600" : "text-red-500"}>
+                        {isAchieved ? "Proj ≤ Real" : "Proj > Real"}
+                      </span>
                     </td>
                     <td className="text-center py-3 px-2">
                       <span
@@ -977,21 +982,23 @@ function MetricsTable({ result }: { result: ValidationResultData }) {
 }
 
 function ClassificationBreakdown({ result }: { result: ValidationResultData }) {
-  const total = result.totalMetrics;
-  const achievedTotal = result.excellentCount + result.goodCount;
-  const notAchievedTotal = result.mediumCount + result.divergentCount;
+  const metrics: MetricValidation[] =
+    typeof result.metricsValidation === "string"
+      ? JSON.parse(result.metricsValidation)
+      : result.metricsValidation;
 
-  const items = [
-    { label: "Alcançado (≤10%)", count: result.excellentCount, color: "bg-green-500", icon: "✓" },
-    { label: "Próximo (10-20%)", count: result.goodCount, color: "bg-blue-500", icon: "≈" },
-    { label: "Parcial (20-35%)", count: result.mediumCount, color: "bg-amber-500", icon: "~" },
-    { label: "Não Alcançado (>35%)", count: result.divergentCount, color: "bg-red-500", icon: "✗" },
-  ];
+  const total = metrics.length;
+  const achievedTotal = metrics.filter((m) => m.projected <= m.actual).length;
+  const notAchievedTotal = total - achievedTotal;
+
+  const achievedPercent = total > 0 ? (achievedTotal / total) * 100 : 0;
+  const notAchievedPercent = total > 0 ? (notAchievedTotal / total) * 100 : 0;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Distribuição dos Resultados</CardTitle>
+        <p className="text-sm text-muted-foreground">Critério: Projeção ≤ Real = Alcançado | Projeção &gt; Real = Não Alcançado</p>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary badges */}
@@ -1000,40 +1007,56 @@ function ClassificationBreakdown({ result }: { result: ValidationResultData }) {
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             <div>
               <p className="text-lg font-bold text-green-700 dark:text-green-400">{achievedTotal}</p>
-              <p className="text-xs text-green-600">Métricas Positivas</p>
+              <p className="text-xs text-green-600">Alcançadas (Proj ≤ Real)</p>
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
             <XCircle className="h-5 w-5 text-red-600" />
             <div>
               <p className="text-lg font-bold text-red-700 dark:text-red-400">{notAchievedTotal}</p>
-              <p className="text-xs text-red-600">Métricas a Melhorar</p>
+              <p className="text-xs text-red-600">Não Alcançadas (Proj &gt; Real)</p>
             </div>
           </div>
         </div>
 
-        {/* Bar chart */}
+        {/* Bar chart - binary */}
         <div className="space-y-3">
-          {items.map((item) => (
-            <div key={item.label} className="flex items-center gap-3">
-              <span className="text-sm w-44 flex items-center gap-1.5">
-                <span className="text-base">{item.icon}</span> {item.label}
-              </span>
-              <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-6 overflow-hidden">
-                <div
-                  className={`${item.color} h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
-                  style={{ width: total > 0 ? `${Math.max((item.count / total) * 100, item.count > 0 ? 8 : 0)}%` : "0%" }}
-                >
-                  {item.count > 0 && (
-                    <span className="text-xs text-white font-semibold">{item.count}</span>
-                  )}
-                </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm w-44 flex items-center gap-1.5">
+              <span className="text-base">✓</span> Alcançado
+            </span>
+            <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-6 overflow-hidden">
+              <div
+                className="bg-green-500 h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                style={{ width: `${Math.max(achievedPercent, achievedTotal > 0 ? 8 : 0)}%` }}
+              >
+                {achievedTotal > 0 && (
+                  <span className="text-xs text-white font-semibold">{achievedTotal}</span>
+                )}
               </div>
-              <span className="text-sm font-medium w-12 text-right">
-                {total > 0 ? ((item.count / total) * 100).toFixed(0) : 0}%
-              </span>
             </div>
-          ))}
+            <span className="text-sm font-medium w-12 text-right">
+              {achievedPercent.toFixed(0)}%
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm w-44 flex items-center gap-1.5">
+              <span className="text-base">✗</span> Não Alcançado
+            </span>
+            <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-6 overflow-hidden">
+              <div
+                className="bg-red-500 h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                style={{ width: `${Math.max(notAchievedPercent, notAchievedTotal > 0 ? 8 : 0)}%` }}
+              >
+                {notAchievedTotal > 0 && (
+                  <span className="text-xs text-white font-semibold">{notAchievedTotal}</span>
+                )}
+              </div>
+            </div>
+            <span className="text-sm font-medium w-12 text-right">
+              {notAchievedPercent.toFixed(0)}%
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>
