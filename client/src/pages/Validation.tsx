@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import SuggestionsValidation from "@/components/SuggestionsValidation";
 import {
   ArrowLeft,
   Search,
@@ -114,6 +115,7 @@ function ValidationContent({ analysisId }: { analysisId: number }) {
         <OverallScore result={validationResult} />
         <MetricsTable result={validationResult} />
         <ClassificationBreakdown result={validationResult} />
+        {analysisId && finalStats && analysis && <SuggestionsValidation analysisId={analysisId} finalStats={finalStats} analysis={analysis} />}
       </div>
     );
   }

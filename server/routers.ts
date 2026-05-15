@@ -3,11 +3,12 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { calculateProjections, TeamData } from "./calculations";
+import { calculateProjections, TeamData, RankingLine } from "./calculations";
 import { createAnalysis, getUserAnalyses, getAnalysisById, deleteAnalysis } from "./db";
 import { importRouter } from "./routers/import";
 import { pdfImportRouter } from "./routers/pdf-import";
 import { validationRouter } from "./routers/validation";
+import { generateSuggestions } from "./services/suggestions-engine";
 
 export const appRouter = router({
   system: systemRouter,
@@ -159,6 +160,23 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await deleteAnalysis(input.id, ctx.user.id);
         return { success: true };
+      }),
+
+    /**
+     * Get statistical suggestions for an analysis
+     */
+    getSuggestions: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const analysis = await getAnalysisById(input.id, ctx.user.id);
+        if (!analysis) {
+          throw new Error("Análise não encontrada");
+        }
+        const rankingData: RankingLine[] = typeof analysis.rankingData === 'string'
+          ? JSON.parse(analysis.rankingData)
+          : (analysis.rankingData as unknown as RankingLine[]) || [];
+
+        return generateSuggestions(rankingData);
       }),
   }),
 });

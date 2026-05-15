@@ -212,3 +212,23 @@
 - [x] Projeção exibida com 2 casas decimais para evitar confusão de arredondamento
 - [x] Atualizar testes unitários para nova lógica (75/75 passando)
 - [x] Rodar testes e salvar checkpoint
+
+## Fase 19: Módulo "Sugestões Estatísticas do Modelo"
+
+- [x] Criar serviço backend suggestions-engine.ts com lógica de seleção de linhas elegíveis
+- [x] Implementar critérios de exclusão (índice < 7.5, status Média/Fraca, margem negativa, etc.)
+- [x] Implementar hierarquia de métricas (chutes no gol > finalizações > escanteios > gols > etc.)
+- [x] Implementar matriz de correlação entre linhas
+- [x] Implementar cálculo do índice da combinação (média - penalidade correlação)
+- [x] Implementar geração de perfil Conservador (2 linhas, volume, evitar correlação alta)
+- [x] Implementar geração de perfil Equilibrado (2 linhas, volume + gols, correlação média OK)
+- [x] Implementar geração de perfil Agressivo (3 linhas, correlação alta OK, alerta roteiro)
+- [x] Implementar lista de linhas rejeitadas com motivos
+- [x] Criar procedimento tRPC analysis.getSuggestions
+- [x] Criar componente frontend SuggestionsSection com 3 cards (Conservador/Equilibrado/Agressivo)
+- [x] Implementar card visual: linhas, índice final, status, correlação, alertas, badges
+- [x] Implementar seção "Linhas rejeitadas pelo modelo" abaixo dos cards
+- [x] Adicionar disclaimer: "sugestões baseadas em projeção estatística, sem garantia de resultado"
+- [x] Integrar validação pós-jogo das sugestões (Validada/Push/Não validada com team names da análise)
+- [x] Escrever testes unitários para suggestions-engine.ts (32 testes passando)
+- [x] Verificar no browser: sugestões na AnalysisDetail + validação na Validation page (107/107 testes)

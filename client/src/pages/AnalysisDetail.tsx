@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { exportAnalysisToPDF } from "@/lib/pdf-export";
+import SuggestionsSection from "@/components/SuggestionsSection";
 
 export default function AnalysisDetail() {
   const [, navigate] = useLocation();
@@ -367,6 +368,9 @@ export default function AnalysisDetail() {
           </div>
         </Card>
       )}
+
+      {/* Sugestões Estatísticas do Modelo */}
+      {analysisId && <SuggestionsSection analysisId={analysisId} />}
     </div>
   );
 }
