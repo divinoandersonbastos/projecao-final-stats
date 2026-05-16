@@ -1,0 +1,1 @@
+ALTER TABLE `finalMatchStats` MODIFY COLUMN `dataSource` enum('api-football','manual','sportmonks') NOT NULL DEFAULT 'manual';

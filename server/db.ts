@@ -328,7 +328,7 @@ export async function saveFinalMatchStats(data: {
   awayPossession?: number | null;
   homeXg?: number | null;
   awayXg?: number | null;
-  dataSource: "api-football" | "manual";
+  dataSource: "api-football" | "manual" | "sportmonks";
   rawApiData?: unknown;
 }) {
   const db = await getDb();

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { searchFixtures, getFixtureStats, getLiveFixtures, getFixturesByDate, getApiStatus } from "../services/api-football";
+import { searchFixtures, getFixtureStats, getLiveFixtures, getFixturesByDate, getApiStatus } from "../services/sportmonks-validation";
 import { calculateValidation } from "../services/validation-calculator";
 import {
   getAnalysisById,
@@ -15,7 +15,7 @@ import {
 
 export const validationRouter = router({
   /**
-   * Get live fixtures currently being played
+   * Get live fixtures currently being played (via Sportmonks livescores)
    */
   getLiveFixtures: protectedProcedure
     .query(async () => {
@@ -23,7 +23,7 @@ export const validationRouter = router({
     }),
 
   /**
-   * Get fixtures for a specific date (default: today)
+   * Get fixtures for a specific date (default: today) via Sportmonks
    */
   getFixturesByDate: protectedProcedure
     .input(z.object({ date: z.string().optional() }))
@@ -32,7 +32,7 @@ export const validationRouter = router({
     }),
 
   /**
-   * Search for fixtures by team name (searches today + live)
+   * Search for fixtures by team name (searches today + live) via Sportmonks
    */
   searchFixtures: protectedProcedure
     .input(
@@ -52,7 +52,7 @@ export const validationRouter = router({
     }),
 
   /**
-   * Get API status (requests used today)
+   * Get API rate limit status (Sportmonks)
    */
   getApiStatus: protectedProcedure
     .query(async () => {
@@ -60,7 +60,7 @@ export const validationRouter = router({
     }),
 
   /**
-   * Fetch fixture stats from API-Football and save to DB
+   * Fetch fixture stats from Sportmonks and save to DB
    */
   fetchAndSaveStats: protectedProcedure
     .input(
@@ -76,7 +76,7 @@ export const validationRouter = router({
         throw new Error("Análise não encontrada");
       }
 
-      // Fetch stats from API-Football
+      // Fetch stats from Sportmonks
       const stats = await getFixtureStats(input.fixtureId);
 
       // Check if game is finished or at least has stats
@@ -103,7 +103,7 @@ export const validationRouter = router({
         awayPossession: stats.awayPossession,
         homeXg: stats.homeXg,
         awayXg: stats.awayXg,
-        dataSource: "api-football",
+        dataSource: "sportmonks",
         rawApiData: stats,
       });
 

@@ -305,7 +305,7 @@ function ApiSearchTab({
               type="number"
               value={fixtureIdInput}
               onChange={(e) => setFixtureIdInput(e.target.value)}
-              placeholder="Ex: 1180728"
+              placeholder="Ex: 19694879"
               className="flex-1"
             />
             <Button
@@ -345,7 +345,7 @@ function ApiSearchTab({
 
           <p className="text-xs text-muted-foreground">
             Buscando partidas de <strong>{analysis.homeTeamName}</strong> x <strong>{analysis.awayTeamName}</strong>.
-            A API retorna partidas ao vivo e do dia selecionado. Ou insira o ID da partida diretamente.
+            A Sportmonks retorna partidas ao vivo e do dia selecionado. Ou insira o ID da partida (Sportmonks) diretamente.
           </p>
         </CardContent>
       </Card>
@@ -706,7 +706,7 @@ function MatchHeader({ analysis, finalStats }: { analysis: any; finalStats: any 
               {finalStats?.homeGoals ?? "?"} x {finalStats?.awayGoals ?? "?"}
             </p>
             <p className="text-sm text-slate-300 mt-2">
-              {finalStats?.dataSource === "api-football" ? "Via API-Football" : "Inserido manualmente"}
+              {finalStats?.dataSource === "sportmonks" ? "Via Sportmonks" : finalStats?.dataSource === "api-football" ? "Via API-Football" : "Inserido manualmente"}
             </p>
           </div>
         </div>

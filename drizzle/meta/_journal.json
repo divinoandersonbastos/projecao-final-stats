@@ -50,6 +50,13 @@
       "when": 1778936373719,
       "tag": "0006_sparkling_blue_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1778951020060,
+      "tag": "0007_stormy_odin",
+      "breakpoints": true
     }
   ]
 }

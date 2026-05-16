@@ -302,3 +302,26 @@
 - [x] Exibir explicação detalhada ao expandir "Ver detalhes dos critérios" (barras por critério + pesos)
 - [x] Escrever testes unitários para match-quality-service (157+ testes passando)
 - [x] Verificar no browser: 7 partidas analisadas (3 Excelentes Serie A, 4 Serie B), filtros por bloco funcionando, scores 5.7-8.9
+
+
+## Fase 23: Substituir API-Football por Sportmonks na Validação Pós-Jogo
+
+- [x] Analisar código atual do módulo de validação (api-football.ts, validation router)
+- [x] Pesquisar endpoints Sportmonks para fixtures ao vivo, por data, e estatísticas finais
+- [x] Criar sportmonks-validation-service.ts (busca fixtures finalizadas, stats de partida)
+- [x] Mapear dados Sportmonks para formato esperado pela validação (gols, finalizações, chutes no gol, escanteios, etc.)
+- [x] Atualizar router tRPC de validação para usar Sportmonks em vez de API-Football
+- [x] Atualizar busca por fixture_id para usar ID da Sportmonks
+- [x] Atualizar busca ao vivo/por data para usar Sportmonks
+- [x] Manter entrada manual como fallback (sem alteração)
+- [x] Atualizar frontend se necessário (IDs, labels, placeholder Sportmonks)
+- [x] Rodar testes (192/192 passando) e verificar no browser
+- [x] Salvar checkpoint e push GitHub
+
+## Fase 23b: Migrar Agenda para Sportmonks
+
+- [x] Reescrever agenda-service.ts para usar Sportmonks (fetchFixturesFromApi, fetchLiveFixturesFromApi)
+- [x] Adaptar transformFixture para formato Sportmonks (participants, state, scores) + fix UTC date parsing
+- [x] Atualizar agenda router (sem alteração necessária - usa mesma interface)
+- [x] Remover dependência de api-football.ts (mantido como legado/referência)
+- [x] Verificar no browser: Agenda carrega 1367 fixtures globais via Sportmonks, horários corretos em SP timezone

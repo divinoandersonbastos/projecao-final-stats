@@ -130,7 +130,7 @@ export const finalMatchStats = mysqlTable("finalMatchStats", {
   awayXg: decimal("awayXg", { precision: 5, scale: 2 }),
 
   // Source of data
-  dataSource: mysqlEnum("dataSource", ["api-football", "manual"]).default("manual").notNull(),
+  dataSource: mysqlEnum("dataSource", ["api-football", "manual", "sportmonks"]).default("manual").notNull(),
 
   // Raw API response for reference
   rawApiData: json("rawApiData"),
