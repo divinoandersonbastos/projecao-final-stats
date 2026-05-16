@@ -332,7 +332,11 @@
 - [x] Criar router tRPC livescore (getInplay, getMatchDetail com stats+events)
 - [x] Criar página AoVivo.tsx com sidebar de jogos ao vivo
 - [x] Implementar cabeçalho do jogo (placar grande, minuto pulsante, períodos)
-- [ ] Implementar banner de comparação com projeção (próxima fase)
+- [x] Implementar banner de comparação com projeção
+  - [x] Backend: buscar análise associada ao jogo (por times) no router livescore (findAnalysisByTeams + getProjectionComparison)
+  - [x] Frontend: banner com badges verde/amarelo/vermelho por mercado (8 ranking lines com IC >= 6.0)
+  - [x] Lógica de comparação: projetado vs real (gols, escanteios, chutes, finalizações) com badges dinâmicos
+  - [x] Verificar no browser: Fluminense vs São Paulo mostra 8 linhas de projeção com IC 6.0-9.0
 - [x] Implementar barras de estatísticas ao vivo (posse, finalizações, escanteios, etc.)
 - [x] Implementar timeline de eventos (gols, cartões, substituições)
 - [x] Implementar auto-refresh a cada 30s com indicador visual

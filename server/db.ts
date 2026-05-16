@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, analyses, teamStats, Analysis, TeamStats, finalMatchStats, modelValidationResults, InsertFinalMatchStats, InsertModelValidationResult } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -446,4 +446,46 @@ export async function getUserAnalysesByStatus(userId: number, status?: "pending"
     .from(analyses)
     .where(eq(analyses.userId, userId))
     .orderBy(desc(analyses.createdAt));
+}
+
+/**
+ * Find the most recent analysis matching a pair of team names.
+ * Uses LIKE for fuzzy matching since Sportmonks team names may differ slightly from user-entered names.
+ * Returns the analysis with projected values and ranking data for live comparison.
+ */
+export async function findAnalysisByTeams(userId: number, homeTeamName: string, awayTeamName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Try exact match first
+  let result = await db
+    .select()
+    .from(analyses)
+    .where(
+      and(
+        eq(analyses.userId, userId),
+        like(analyses.homeTeamName, `%${homeTeamName}%`),
+        like(analyses.awayTeamName, `%${awayTeamName}%`)
+      )
+    )
+    .orderBy(desc(analyses.createdAt))
+    .limit(1);
+
+  // If no match, try reversed (away/home swapped)
+  if (result.length === 0) {
+    result = await db
+      .select()
+      .from(analyses)
+      .where(
+        and(
+          eq(analyses.userId, userId),
+          like(analyses.homeTeamName, `%${awayTeamName}%`),
+          like(analyses.awayTeamName, `%${homeTeamName}%`)
+        )
+      )
+      .orderBy(desc(analyses.createdAt))
+      .limit(1);
+  }
+
+  return result.length > 0 ? result[0] : null;
 }

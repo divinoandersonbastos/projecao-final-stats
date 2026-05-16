@@ -23,6 +23,11 @@ import {
   Timer,
   Wifi,
   WifiOff,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  MinusCircle,
+  BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -517,6 +522,284 @@ function EventsTimeline({ events, homeTeamId }: { events: MatchEvent[]; homeTeam
   );
 }
 
+// ─── Projection Comparison Banner ─────────────────────────────
+
+interface ProjectionData {
+  analysisId: number;
+  homeTeamName: string;
+  awayTeamName: string;
+  projectedHomeGoals: number;
+  projectedAwayGoals: number;
+  projections: {
+    homeShots: number;
+    awayShots: number;
+    homeShotsOnTarget: number;
+    awayShotsOnTarget: number;
+    homeCorners: number;
+    awayCorners: number;
+    homeGoals: number;
+    awayGoals: number;
+  };
+  rankingLines: {
+    line: string;
+    projection: number;
+    baseline: number;
+    confidenceIndex: number;
+    category: string;
+  }[];
+  createdAt: string | Date;
+}
+
+type BadgeStatus = 'on-track' | 'attention' | 'off-track' | 'unavailable';
+
+function getMarketStatus(
+  label: string,
+  projected: number,
+  baseline: number,
+  actual: number | null,
+  minute: number | null,
+): { status: BadgeStatus; actual: number | null; projected: number; baseline: number; progress: number } {
+  if (actual === null) {
+    return { status: 'unavailable', actual: null, projected, baseline, progress: 0 };
+  }
+
+  // Calculate expected progress based on minute (90 min match)
+  const matchMinute = minute ?? 0;
+  const expectedProgress = Math.min(matchMinute / 90, 1);
+  const expectedAtThisPoint = baseline * expectedProgress;
+
+  // If match is finished, compare directly
+  if (matchMinute >= 85) {
+    if (actual >= baseline) return { status: 'on-track', actual, projected, baseline, progress: actual / baseline };
+    if (actual >= baseline * 0.8) return { status: 'attention', actual, projected, baseline, progress: actual / baseline };
+    return { status: 'off-track', actual, projected, baseline, progress: actual / baseline };
+  }
+
+  // During the match: compare actual vs expected pace
+  if (actual >= expectedAtThisPoint) {
+    return { status: 'on-track', actual, projected, baseline, progress: actual / baseline };
+  } else if (actual >= expectedAtThisPoint * 0.7) {
+    return { status: 'attention', actual, projected, baseline, progress: actual / baseline };
+  }
+  return { status: 'off-track', actual, projected, baseline, progress: actual / baseline };
+}
+
+function ProjectionBanner({
+  projection,
+  stats,
+  fixture,
+}: {
+  projection: ProjectionData;
+  stats: LiveStats;
+  fixture: LiveFixture;
+}) {
+  const isLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(fixture.state);
+  const isFinished = ['FT', 'AET', 'PEN'].includes(fixture.state);
+  const minute = fixture.minute;
+
+  const homeTeamLower = projection.homeTeamName.toLowerCase();
+  const awayTeamLower = projection.awayTeamName.toLowerCase();
+
+  // Map live stats to ranking line values
+  const getActualForLine = (lineName: string): number | null => {
+    const lower = lineName.toLowerCase();
+
+    if (lower.includes('total chutes no gol') || lower.includes('total finalizações no gol')) {
+      const h = stats.shotsOnTarget.home;
+      const a = stats.shotsOnTarget.away;
+      if (h == null || a == null) return null;
+      return h + a;
+    }
+    if (lower.includes('chutes no gol') || lower.includes('finalizações no gol')) {
+      if (lower.includes(homeTeamLower)) return stats.shotsOnTarget.home;
+      if (lower.includes(awayTeamLower)) return stats.shotsOnTarget.away;
+      return null;
+    }
+
+    if (lower === 'total finalizações') {
+      const h = stats.totalShots.home;
+      const a = stats.totalShots.away;
+      if (h == null || a == null) return null;
+      return h + a;
+    }
+    if (lower.includes('finalizações')) {
+      if (lower.includes(homeTeamLower)) return stats.totalShots.home;
+      if (lower.includes(awayTeamLower)) return stats.totalShots.away;
+      return null;
+    }
+
+    if (lower.includes('total escanteios')) {
+      const h = stats.corners.home;
+      const a = stats.corners.away;
+      if (h == null || a == null) return null;
+      return h + a;
+    }
+    if (lower.includes('escanteios')) {
+      if (lower.includes(homeTeamLower)) return stats.corners.home;
+      if (lower.includes(awayTeamLower)) return stats.corners.away;
+      return null;
+    }
+
+    if (lower.includes('total gols')) {
+      const hg = fixture.homeGoals;
+      const ag = fixture.awayGoals;
+      if (hg == null || ag == null) return null;
+      return hg + ag;
+    }
+    if (lower.includes('gols')) {
+      if (lower.includes(homeTeamLower)) return fixture.homeGoals;
+      if (lower.includes(awayTeamLower)) return fixture.awayGoals;
+      return null;
+    }
+
+    return null;
+  };
+
+  // Build market badges from ranking lines
+  const marketBadges = projection.rankingLines.map((line) => {
+    const actual = getActualForLine(line.line);
+    const result = getMarketStatus(line.line, line.projection, line.baseline, actual, minute);
+    return {
+      ...result,
+      label: line.line,
+      category: line.category,
+      confidence: line.confidenceIndex,
+    };
+  });
+
+  // Also add main projection (total goals)
+  const totalGoalsActual = (fixture.homeGoals ?? 0) + (fixture.awayGoals ?? 0);
+  const totalGoalsProjected = projection.projectedHomeGoals + projection.projectedAwayGoals;
+  const mainGoalStatus = getMarketStatus(
+    'Total Gols',
+    totalGoalsProjected,
+    totalGoalsProjected - 0.5,
+    isLive || isFinished ? totalGoalsActual : null,
+    minute
+  );
+
+  const statusConfig = {
+    'on-track': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle2, label: 'No caminho' },
+    'attention': { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: AlertTriangle, label: 'Atenção' },
+    'off-track': { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Divergente' },
+    'unavailable': { color: 'bg-gray-100 text-gray-500 border-gray-200', icon: MinusCircle, label: 'Aguardando' },
+  };
+
+  const categoryLabels: Record<string, string> = {
+    A: 'Escanteios',
+    B: 'Finalizações',
+    C: 'Chutes no Gol',
+    D: 'Gols',
+  };
+
+  // Summary counts
+  const onTrackCount = marketBadges.filter(b => b.status === 'on-track').length;
+  const attentionCount = marketBadges.filter(b => b.status === 'attention').length;
+  const offTrackCount = marketBadges.filter(b => b.status === 'off-track').length;
+  const availableCount = marketBadges.filter(b => b.status !== 'unavailable').length;
+
+  return (
+    <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            Comparação com Projeção
+          </div>
+          <Badge variant="outline" className="text-xs font-normal">
+            Análise #{projection.analysisId}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Main projection summary */}
+        <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
+          <div className="text-sm">
+            <span className="text-muted-foreground">Placar projetado: </span>
+            <span className="font-bold">
+              {projection.homeTeamName} {projection.projectedHomeGoals} x {projection.projectedAwayGoals} {projection.awayTeamName}
+            </span>
+          </div>
+          {(isLive || isFinished) && (
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig[mainGoalStatus.status].color}`}>
+              {(() => { const Icon = statusConfig[mainGoalStatus.status].icon; return <Icon className="h-3.5 w-3.5" />; })()}
+              {statusConfig[mainGoalStatus.status].label}
+            </div>
+          )}
+        </div>
+
+        {/* Summary bar */}
+        {availableCount > 0 && (
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-muted-foreground">Mercados:</span>
+            {onTrackCount > 0 && (
+              <span className="flex items-center gap-1 text-green-700">
+                <CheckCircle2 className="h-3 w-3" /> {onTrackCount} no caminho
+              </span>
+            )}
+            {attentionCount > 0 && (
+              <span className="flex items-center gap-1 text-amber-700">
+                <AlertTriangle className="h-3 w-3" /> {attentionCount} atenção
+              </span>
+            )}
+            {offTrackCount > 0 && (
+              <span className="flex items-center gap-1 text-red-700">
+                <XCircle className="h-3 w-3" /> {offTrackCount} divergente{offTrackCount > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Individual market badges */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {marketBadges.map((badge, idx) => {
+            const config = statusConfig[badge.status];
+            const Icon = config.icon;
+            return (
+              <div
+                key={idx}
+                className={`flex items-center justify-between p-2.5 rounded-lg border text-xs ${config.color}`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{badge.label}</p>
+                    <p className="text-[10px] opacity-75">
+                      {categoryLabels[badge.category] || badge.category} • IC {badge.confidence.toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 ml-2">
+                  {badge.actual !== null ? (
+                    <>
+                      <p className="font-bold">{badge.actual}</p>
+                      <p className="text-[10px] opacity-75">linha {badge.baseline.toFixed(1)}</p>
+                    </>
+                  ) : (
+                    <p className="text-[10px]">—</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        {!isLive && !isFinished && (
+          <p className="text-[10px] text-muted-foreground text-center">
+            Os badges serão atualizados quando a partida iniciar
+          </p>
+        )}
+        {isLive && (
+          <p className="text-[10px] text-muted-foreground text-center">
+            Comparação baseada no ritmo atual vs linha projetada • Atualiza a cada 30s
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Empty / No Selection State ────────────────────────────────
 
 function EmptyState({ type }: { type: 'no-fixtures' | 'no-selection' }) {
@@ -568,6 +851,24 @@ export default function AoVivo() {
       enabled: !!selectedFixtureId,
       refetchInterval: autoRefresh ? 30000 : false,
       refetchOnWindowFocus: true,
+    }
+  );
+
+  // Fetch projection comparison for selected fixture
+  const selectedFixture = useMemo(() => {
+    if (!todayQuery.data || !selectedFixtureId) return null;
+    const all = [...todayQuery.data.live, ...todayQuery.data.upcoming, ...todayQuery.data.finished];
+    return all.find(f => f.id === selectedFixtureId) ?? null;
+  }, [todayQuery.data, selectedFixtureId]);
+
+  const projectionQuery = trpc.livescore.getProjectionComparison.useQuery(
+    {
+      homeTeamName: selectedFixture?.homeTeam.name ?? '',
+      awayTeamName: selectedFixture?.awayTeam.name ?? '',
+    },
+    {
+      enabled: !!selectedFixture,
+      staleTime: 60000, // Cache for 1 minute
     }
   );
 
@@ -733,6 +1034,15 @@ export default function AoVivo() {
           <>
             {/* Match Header */}
             <MatchHeader fixture={detailQuery.data.fixture} />
+
+            {/* Projection Comparison Banner */}
+            {projectionQuery.data && (
+              <ProjectionBanner
+                projection={projectionQuery.data}
+                stats={detailQuery.data.stats}
+                fixture={detailQuery.data.fixture}
+              />
+            )}
 
             {/* Stats + Events in 2-column layout */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
