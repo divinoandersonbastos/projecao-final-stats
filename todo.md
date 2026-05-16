@@ -281,3 +281,24 @@
 - [x] Verificar no browser: 373 jogos carregados, agrupados por liga, filtros e busca funcionando
 - [x] Fix: countryCode varchar(8) → varchar(512) para acomodar URLs de bandeiras da API
 - [x] Fix: BATCH_SIZE reduzido de 50 para 10 para evitar limite de parâmetros SQL
+
+## Fase 22: Módulo "Filtro de Melhores Partidas do Dia" (Sportmonks)
+
+- [x] Configurar SPORTMONKS_API_TOKEN no projeto (token validado, 2 testes passando)
+- [x] Criar sportmonks-service.ts (buscar stats agregadas de times por temporada)
+- [x] Mapear type_ids: 44=dangerous-attacks, 1677=shots, 34=corners, 52=goals, 88=goals-conceded, 43=attacks
+- [x] Implementar busca de fixtures do dia via Sportmonks
+- [x] Criar match-quality-service.ts com lógica de pontuação (6 critérios)
+- [x] Critério 1: Dados disponíveis (mínimo 5 jogos na temporada)
+- [x] Critério 2: Coerência casa/fora (stats separadas por mando)
+- [x] Critério 3: Volume ofensivo (ataques perigosos avg > 35, finalizações avg > 10)
+- [x] Critério 4: Defesa permite volume (adversário sofre finalizações)
+- [x] Critério 5: Equilíbrio competitivo (gols avg próximos entre times)
+- [x] Critério 6: Risco contextual (tipo de competição, fase)
+- [x] Calcular índice de qualidade final (0-10) com pesos por critério
+- [x] Criar procedimento tRPC matchQuality.getTopMatches(date)
+- [x] Criar página dedicada "Top Jogos do Dia" com rota /dashboard/top-matches e sidebar
+- [x] Exibir badge de qualidade (Excelente/Aceitável/Cuidado) em cada fixture card
+- [x] Exibir explicação detalhada ao expandir "Ver detalhes dos critérios" (barras por critério + pesos)
+- [x] Escrever testes unitários para match-quality-service (157+ testes passando)
+- [x] Verificar no browser: 7 partidas analisadas (3 Excelentes Serie A, 4 Serie B), filtros por bloco funcionando, scores 5.7-8.9

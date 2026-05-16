@@ -9,4 +9,5 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   apiFootballKey: process.env.API_FOOTBALL_KEY ?? "",
   apiFootballUrl: process.env.API_FOOTBALL_URL ?? "https://v3.football.api-sports.io",
+  SPORTMONKS_API_TOKEN: process.env.SPORTMONKS_API_TOKEN ?? "",
 };

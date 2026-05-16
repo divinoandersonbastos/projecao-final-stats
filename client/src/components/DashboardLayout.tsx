@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Plus, BarChart3, TrendingUp, FileUp, ClipboardCheck, Search, Calendar } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Plus, BarChart3, TrendingUp, FileUp, ClipboardCheck, Search, Calendar, Trophy } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -35,6 +35,7 @@ const menuItems = [
   { icon: ClipboardCheck, label: "Validação Pós-Jogo", path: "/history?filter=validation" },
   { icon: Search, label: "Detector de Ineficiência", path: "/market-inefficiency" },
   { icon: Calendar, label: "Agenda dos Jogos", path: "/agenda" },
+  { icon: Trophy, label: "Top Jogos do Dia", path: "/top-matches" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

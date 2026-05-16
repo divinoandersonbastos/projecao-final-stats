@@ -207,3 +207,52 @@ export const fixtures = mysqlTable("fixtures", {
 
 export type Fixture = typeof fixtures.$inferSelect;
 export type InsertFixture = typeof fixtures.$inferInsert;
+
+/**
+ * Daily match quality - caches quality scores for fixtures
+ */
+export const dailyMatchQuality = mysqlTable("dailyMatchQuality", {
+  id: int("id").autoincrement().primaryKey(),
+  fixtureId: int("fixtureId").notNull(),
+  matchDate: varchar("matchDate", { length: 10 }).notNull(), // YYYY-MM-DD
+  homeTeam: varchar("homeTeam", { length: 255 }).notNull(),
+  awayTeam: varchar("awayTeam", { length: 255 }).notNull(),
+  homeTeamId: int("homeTeamId").notNull(),
+  awayTeamId: int("awayTeamId").notNull(),
+  league: varchar("league", { length: 255 }).notNull(),
+  country: varchar("country", { length: 128 }).notNull(),
+  time: varchar("time", { length: 5 }),
+  
+  // Quality scores (0-10)
+  qualityScore: decimal("qualityScore", { precision: 4, scale: 2 }).notNull(),
+  qualityLabel: mysqlEnum("qualityLabel", ["excellent", "good", "acceptable", "caution", "avoid"]).notNull(),
+  
+  // Individual criteria scores (0-10)
+  dataAvailabilityScore: decimal("dataAvailabilityScore", { precision: 4, scale: 2 }).notNull(),
+  homeAwayScore: decimal("homeAwayScore", { precision: 4, scale: 2 }).notNull(),
+  offensiveVolumeScore: decimal("offensiveVolumeScore", { precision: 4, scale: 2 }).notNull(),
+  defensiveVolumeScore: decimal("defensiveVolumeScore", { precision: 4, scale: 2 }).notNull(),
+  competitiveBalanceScore: decimal("competitiveBalanceScore", { precision: 4, scale: 2 }).notNull(),
+  contextRiskScore: decimal("contextRiskScore", { precision: 4, scale: 2 }).notNull(),
+  
+  // Best statistical blocks (JSON array of strings)
+  bestBlocksJson: json("bestBlocksJson").notNull(),
+  // Alerts (JSON array of strings)
+  alertsJson: json("alertsJson").notNull(),
+  // Explanation text
+  explanation: text("explanation"),
+  
+  // Projected stats used for calculation
+  projectedStatsJson: json("projectedStatsJson"),
+  
+  // Sportmonks IDs for reference
+  sportmonksHomeTeamId: int("sportmonksHomeTeamId"),
+  sportmonksAwayTeamId: int("sportmonksAwayTeamId"),
+  sportmonksSeasonId: int("sportmonksSeasonId"),
+  
+  userId: int("userId").notNull(),
+  calculatedAt: timestamp("calculatedAt").defaultNow().notNull(),
+});
+
+export type DailyMatchQuality = typeof dailyMatchQuality.$inferSelect;
+export type InsertDailyMatchQuality = typeof dailyMatchQuality.$inferInsert;

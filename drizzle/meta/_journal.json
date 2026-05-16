@@ -43,6 +43,13 @@
       "when": 1778881584181,
       "tag": "0005_pink_nico_minoru",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1778936373719,
+      "tag": "0006_sparkling_blue_blade",
+      "breakpoints": true
     }
   ]
 }
