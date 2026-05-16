@@ -15,7 +15,8 @@ import PDFImport from "@/pages/PDFImport";
 import Validation from "@/pages/Validation";
 import MarketInefficiency from "@/pages/MarketInefficiency";
 import Agenda from "@/pages/Agenda";
-import TopMatches from "@/pages/TopMatches";
+import TopMatches from '@/pages/TopMatches';
+import AoVivo from '@/pages/AoVivo';
 
 function DashboardRouter() {
   return (
@@ -50,6 +51,9 @@ function DashboardRouter() {
         </Route>
         <Route path="/top-matches">
           <TopMatches />
+        </Route>
+        <Route path="/ao-vivo">
+          <AoVivo />
         </Route>
         <Route>
           <NewAnalysis />

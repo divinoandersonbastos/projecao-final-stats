@@ -325,3 +325,18 @@
 - [x] Atualizar agenda router (sem alteração necessária - usa mesma interface)
 - [x] Remover dependência de api-football.ts (mantido como legado/referência)
 - [x] Verificar no browser: Agenda carrega 1367 fixtures globais via Sportmonks, horários corretos em SP timezone
+
+## Fase 24: Módulo Acompanhamento ao Vivo
+
+- [x] Criar sportmonks-livescore.ts (buscar jogos ao vivo, stats em tempo real, eventos)
+- [x] Criar router tRPC livescore (getInplay, getMatchDetail com stats+events)
+- [x] Criar página AoVivo.tsx com sidebar de jogos ao vivo
+- [x] Implementar cabeçalho do jogo (placar grande, minuto pulsante, períodos)
+- [ ] Implementar banner de comparação com projeção (próxima fase)
+- [x] Implementar barras de estatísticas ao vivo (posse, finalizações, escanteios, etc.)
+- [x] Implementar timeline de eventos (gols, cartões, substituições)
+- [x] Implementar auto-refresh a cada 30s com indicador visual
+- [x] Registrar rota /dashboard/ao-vivo no App.tsx
+- [x] Adicionar item "Ao Vivo" no sidebar do DashboardLayout
+- [x] Escrever testes unitários para sportmonks-livescore (14 testes, 208 total passando)
+- [x] Verificar no browser: 7 fixtures próximos, detalhe com stats e eventos, auto-refresh funcionando
