@@ -12,6 +12,7 @@ import { oddsOcrRouter } from "./routers/odds-ocr";
 import { agendaRouter } from "./routers/agenda";
 import { matchQualityRouter } from './routers/match-quality';
 import { livescoreRouter } from './routers/livescore';
+import { accuracyRouter } from './routers/accuracy';
 import { generateSuggestions } from "./services/suggestions-engine";
 
 export const appRouter = router({
@@ -23,6 +24,7 @@ export const appRouter = router({
   agenda: agendaRouter,
   matchQuality: matchQualityRouter,
   livescore: livescoreRouter,
+  accuracy: accuracyRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

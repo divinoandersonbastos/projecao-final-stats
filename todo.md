@@ -344,3 +344,17 @@
 - [x] Adicionar item "Ao Vivo" no sidebar do DashboardLayout
 - [x] Escrever testes unitários para sportmonks-livescore (14 testes, 208 total passando)
 - [x] Verificar no browser: 7 fixtures próximos, detalhe com stats e eventos, auto-refresh funcionando
+
+## Fase 25: Histórico de Acurácia do Modelo
+
+- [x] Criar tabela `accuracy_records` no schema (analysisId, fixtureId, homeTeam, awayTeam, date, projectedHomeGoals, projectedAwayGoals, actualHomeGoals, actualAwayGoals, rankingLines JSON, badgeResults JSON, overallAccuracy, createdAt)
+- [x] Gerar migration SQL e aplicar via webdev_execute_sql
+- [x] Criar helpers de banco: saveAccuracyRecord, getAccuracyRecords, getAccuracyStats
+- [x] Criar serviço accuracy-service.ts (calcular badges pós-jogo: verde/amarelo/vermelho por linha)
+- [x] Criar router tRPC accuracy (saveResult, getHistory, getStats)
+- [x] Adicionar botão "Salvar Resultado" na página Ao Vivo (para jogos encerrados com projeção)
+- [x] Criar página Acuracia.tsx com dashboard: taxa geral, por categoria, por IC, histórico de jogos
+- [x] Registrar rota /dashboard/acuracia no App.tsx
+- [x] Adicionar item "Acurácia do Modelo" no sidebar do DashboardLayout
+- [x] Escrever testes unitários para accuracy-service (37 testes, 245 total passando)
+- [x] Verificar no browser: página carrega com estado vazio e instrução de uso, sidebar item ativo

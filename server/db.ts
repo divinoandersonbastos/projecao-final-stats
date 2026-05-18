@@ -1,6 +1,6 @@
 import { eq, and, desc, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, analyses, teamStats, Analysis, TeamStats, finalMatchStats, modelValidationResults, InsertFinalMatchStats, InsertModelValidationResult } from "../drizzle/schema";
+import { InsertUser, users, analyses, teamStats, Analysis, TeamStats, finalMatchStats, modelValidationResults, InsertFinalMatchStats, InsertModelValidationResult, accuracyRecords, AccuracyRecord, InsertAccuracyRecord } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -488,4 +488,132 @@ export async function findAnalysisByTeams(userId: number, homeTeamName: string, 
   }
 
   return result.length > 0 ? result[0] : null;
+}
+
+// ─── Accuracy Records ────────────────────────────────────────────────────────
+
+/**
+ * Save a new accuracy record after a match finishes.
+ */
+export async function saveAccuracyRecord(data: InsertAccuracyRecord): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(accuracyRecords).values(data);
+  return (result[0] as any).insertId as number;
+}
+
+/**
+ * Get all accuracy records for a user, ordered by most recent first.
+ */
+export async function getAccuracyRecords(userId: number, limit = 50): Promise<AccuracyRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(accuracyRecords)
+    .where(eq(accuracyRecords.userId, userId))
+    .orderBy(desc(accuracyRecords.createdAt))
+    .limit(limit);
+}
+
+/**
+ * Get aggregate accuracy statistics for a user.
+ */
+export async function getAccuracyStats(userId: number): Promise<{
+  totalMatches: number;
+  totalLines: number;
+  greenCount: number;
+  yellowCount: number;
+  redCount: number;
+  avgHitRate: number;
+  goalHits: number;
+  avgGoalDiff: number;
+}> {
+  const db = await getDb();
+  if (!db) return { totalMatches: 0, totalLines: 0, greenCount: 0, yellowCount: 0, redCount: 0, avgHitRate: 0, goalHits: 0, avgGoalDiff: 0 };
+
+  const rows = await db
+    .select({
+      totalMatches: sql<number>`COUNT(*)`,
+      totalLines: sql<number>`SUM(totalLines)`,
+      greenCount: sql<number>`SUM(greenCount)`,
+      yellowCount: sql<number>`SUM(yellowCount)`,
+      redCount: sql<number>`SUM(redCount)`,
+      avgHitRate: sql<number>`AVG(hitRate)`,
+      goalHits: sql<number>`SUM(goalProjectionHit)`,
+      avgGoalDiff: sql<number>`AVG(goalDiff)`,
+    })
+    .from(accuracyRecords)
+    .where(eq(accuracyRecords.userId, userId));
+
+  const row = rows[0];
+  return {
+    totalMatches: Number(row.totalMatches) || 0,
+    totalLines: Number(row.totalLines) || 0,
+    greenCount: Number(row.greenCount) || 0,
+    yellowCount: Number(row.yellowCount) || 0,
+    redCount: Number(row.redCount) || 0,
+    avgHitRate: parseFloat(String(row.avgHitRate)) || 0,
+    goalHits: Number(row.goalHits) || 0,
+    avgGoalDiff: parseFloat(String(row.avgGoalDiff)) || 0,
+  };
+}
+
+/**
+ * Get accuracy stats grouped by category (Escanteios, Finalizações, Gols, etc.)
+ */
+export async function getAccuracyByCategory(userId: number): Promise<{
+  category: string;
+  total: number;
+  hits: number;
+  hitRate: number;
+}[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const records = await db
+    .select({ rankingLineResults: accuracyRecords.rankingLineResults })
+    .from(accuracyRecords)
+    .where(eq(accuracyRecords.userId, userId));
+
+  // Aggregate by category from JSON
+  const categoryMap: Record<string, { total: number; hits: number }> = {};
+
+  for (const record of records) {
+    const lines = (typeof record.rankingLineResults === 'string'
+      ? JSON.parse(record.rankingLineResults)
+      : record.rankingLineResults) as any[];
+
+    for (const line of lines) {
+      const cat = line.category || 'Outros';
+      if (!categoryMap[cat]) categoryMap[cat] = { total: 0, hits: 0 };
+      categoryMap[cat].total++;
+      if (line.badge === 'green') categoryMap[cat].hits++;
+    }
+  }
+
+  return Object.entries(categoryMap).map(([category, data]) => ({
+    category,
+    total: data.total,
+    hits: data.hits,
+    hitRate: data.total > 0 ? Math.round((data.hits / data.total) * 100) : 0,
+  })).sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Check if an accuracy record already exists for a given analysisId.
+ */
+export async function getAccuracyRecordByAnalysisId(userId: number, analysisId: number): Promise<AccuracyRecord | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const rows = await db
+    .select()
+    .from(accuracyRecords)
+    .where(and(eq(accuracyRecords.userId, userId), eq(accuracyRecords.analysisId, analysisId)))
+    .limit(1);
+
+  return rows.length > 0 ? rows[0] : null;
 }

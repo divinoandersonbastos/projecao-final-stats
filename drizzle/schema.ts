@@ -256,3 +256,63 @@ export const dailyMatchQuality = mysqlTable("dailyMatchQuality", {
 
 export type DailyMatchQuality = typeof dailyMatchQuality.$inferSelect;
 export type InsertDailyMatchQuality = typeof dailyMatchQuality.$inferInsert;
+
+/**
+ * Accuracy records - stores post-match comparison results between projections and real outcomes
+ * Used to build the model accuracy dashboard
+ */
+export const accuracyRecords = mysqlTable("accuracyRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  analysisId: int("analysisId").notNull(),
+
+  // Match identification
+  fixtureId: int("fixtureId"),
+  matchDate: varchar("matchDate", { length: 10 }).notNull(), // YYYY-MM-DD
+  homeTeamName: varchar("homeTeamName", { length: 255 }).notNull(),
+  awayTeamName: varchar("awayTeamName", { length: 255 }).notNull(),
+  league: varchar("league", { length: 255 }),
+
+  // Projected values
+  projectedHomeGoals: int("projectedHomeGoals").notNull(),
+  projectedAwayGoals: int("projectedAwayGoals").notNull(),
+  projectedHomeShots: decimal("projectedHomeShots", { precision: 6, scale: 2 }),
+  projectedAwayShots: decimal("projectedAwayShots", { precision: 6, scale: 2 }),
+  projectedHomeCorners: decimal("projectedHomeCorners", { precision: 6, scale: 2 }),
+  projectedAwayCorners: decimal("projectedAwayCorners", { precision: 6, scale: 2 }),
+  projectedHomeShotsOnTarget: decimal("projectedHomeShotsOnTarget", { precision: 6, scale: 2 }),
+  projectedAwayShotsOnTarget: decimal("projectedAwayShotsOnTarget", { precision: 6, scale: 2 }),
+
+  // Actual values (from Sportmonks post-match)
+  actualHomeGoals: int("actualHomeGoals").notNull(),
+  actualAwayGoals: int("actualAwayGoals").notNull(),
+  actualHomeShots: int("actualHomeShots"),
+  actualAwayShots: int("actualAwayShots"),
+  actualHomeCorners: int("actualHomeCorners"),
+  actualAwayCorners: int("actualAwayCorners"),
+  actualHomeShotsOnTarget: int("actualHomeShotsOnTarget"),
+  actualAwayShotsOnTarget: int("actualAwayShotsOnTarget"),
+
+  // Ranking lines comparison (JSON array of badge results)
+  // Each entry: { line, projection, baseline, confidenceIndex, category, actualValue, badge: 'green'|'yellow'|'red', hit: boolean }
+  rankingLineResults: json("rankingLineResults").notNull(),
+
+  // Aggregate accuracy metrics
+  totalLines: int("totalLines").notNull().default(0),
+  greenCount: int("greenCount").notNull().default(0),   // confirmed
+  yellowCount: int("yellowCount").notNull().default(0), // partial / close
+  redCount: int("redCount").notNull().default(0),       // not confirmed
+  hitRate: decimal("hitRate", { precision: 5, scale: 2 }).notNull().default("0"), // 0-100%
+
+  // Goal accuracy
+  goalProjectionHit: int("goalProjectionHit").default(0), // 1 if exact score, 0 otherwise
+  goalDiff: int("goalDiff"), // |projected - actual| total goals
+
+  // Notes
+  notes: text("notes"),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AccuracyRecord = typeof accuracyRecords.$inferSelect;
+export type InsertAccuracyRecord = typeof accuracyRecords.$inferInsert;

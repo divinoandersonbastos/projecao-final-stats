@@ -17,6 +17,7 @@ import MarketInefficiency from "@/pages/MarketInefficiency";
 import Agenda from "@/pages/Agenda";
 import TopMatches from '@/pages/TopMatches';
 import AoVivo from '@/pages/AoVivo';
+import Acuracia from '@/pages/Acuracia';
 
 function DashboardRouter() {
   return (
@@ -54,6 +55,9 @@ function DashboardRouter() {
         </Route>
         <Route path="/ao-vivo">
           <AoVivo />
+        </Route>
+        <Route path="/acuracia">
+          <Acuracia />
         </Route>
         <Route>
           <NewAnalysis />

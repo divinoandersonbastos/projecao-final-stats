@@ -28,7 +28,9 @@ import {
   XCircle,
   MinusCircle,
   BarChart3,
+  Save,
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 
 // ─── Types ─────────────────────────────────────────────────────
@@ -837,6 +839,21 @@ export default function AoVivo() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [sidebarTab, setSidebarTab] = useState<'live' | 'upcoming' | 'finished'>('live');
+  const [, navigate] = useLocation();
+
+  // Save accuracy result mutation
+  const saveAccuracyMutation = trpc.accuracy.saveResult.useMutation({
+    onSuccess: (data) => {
+      if (data.alreadyExists) {
+        toast.info('Resultado já salvo anteriormente');
+      } else {
+        toast.success('Resultado salvo no histórico de acurácia!', {
+          action: { label: 'Ver Histórico', onClick: () => navigate('/acuracia') },
+        });
+      }
+    },
+    onError: () => toast.error('Erro ao salvar resultado'),
+  });
 
   // Fetch today's fixtures
   const todayQuery = trpc.livescore.getTodayFixtures.useQuery(undefined, {
@@ -1037,11 +1054,57 @@ export default function AoVivo() {
 
             {/* Projection Comparison Banner */}
             {projectionQuery.data && (
-              <ProjectionBanner
-                projection={projectionQuery.data}
-                stats={detailQuery.data.stats}
-                fixture={detailQuery.data.fixture}
-              />
+              <>
+                <ProjectionBanner
+                  projection={projectionQuery.data}
+                  stats={detailQuery.data.stats}
+                  fixture={detailQuery.data.fixture}
+                />
+                {/* Save Result Button - only for finished matches */}
+                {['FT', 'AET', 'PEN'].includes(detailQuery.data.fixture.state) && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                      disabled={saveAccuracyMutation.isPending}
+                      onClick={() => {
+                        const proj = projectionQuery.data!;
+                        const fixture = detailQuery.data!.fixture;
+                        const stats = detailQuery.data!.stats;
+                        saveAccuracyMutation.mutate({
+                          analysisId: proj.analysisId,
+                          fixtureId: fixture.id,
+                          matchDate: fixture.startingAt.split('T')[0],
+                          homeTeamName: fixture.homeTeam.name,
+                          awayTeamName: fixture.awayTeam.name,
+                          league: fixture.leagueName,
+                          projectedHomeGoals: proj.projectedHomeGoals,
+                          projectedAwayGoals: proj.projectedAwayGoals,
+                          rankingLines: proj.rankingLines,
+                          actualStats: {
+                            homeGoals: fixture.homeGoals ?? 0,
+                            awayGoals: fixture.awayGoals ?? 0,
+                            homeShots: stats.totalShots.home ?? undefined,
+                            awayShots: stats.totalShots.away ?? undefined,
+                            homeCorners: stats.corners.home ?? undefined,
+                            awayCorners: stats.corners.away ?? undefined,
+                            homeShotsOnTarget: stats.shotsOnTarget.home ?? undefined,
+                            awayShotsOnTarget: stats.shotsOnTarget.away ?? undefined,
+                          },
+                        });
+                      }}
+                    >
+                      {saveAccuracyMutation.isPending ? (
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Save className="h-3.5 w-3.5" />
+                      )}
+                      Salvar Resultado no Histórico
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Stats + Events in 2-column layout */}
