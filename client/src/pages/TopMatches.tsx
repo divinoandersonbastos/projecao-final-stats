@@ -24,6 +24,9 @@ import {
   Clock,
   Eye,
   EyeOff,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -101,6 +104,99 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'country', label: 'País' },
   { value: 'bestBlock', label: 'Melhor bloco' },
 ];
+
+// ─── Date Helpers ───────────────────────────────────────────────────────────
+
+function formatDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getDayLabel(d: Date, today: Date): string {
+  const diff = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return 'Hoje';
+  if (diff === 1) return 'Amanhã';
+  if (diff === -1) return 'Ontem';
+  return '';
+}
+
+const WEEKDAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+function DateSelector({ selectedDate, onDateChange }: { selectedDate: Date; onDateChange: (d: Date) => void }) {
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  // Generate 7 days: yesterday + today + 5 future days
+  const days = useMemo(() => {
+    const result: Date[] = [];
+    for (let i = -1; i <= 5; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      result.push(d);
+    }
+    return result;
+  }, [today]);
+
+  const handlePrev = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    onDateChange(newDate);
+  };
+
+  const handleNext = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    // Allow up to 7 days in the future
+    const maxDate = new Date(today);
+    maxDate.setDate(today.getDate() + 7);
+    if (newDate <= maxDate) {
+      onDateChange(newDate);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrev}>
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </Button>
+      <div className="flex gap-1 overflow-x-auto">
+        {days.map((d) => {
+          const isSelected = formatDateStr(d) === formatDateStr(selectedDate);
+          const isToday = formatDateStr(d) === formatDateStr(today);
+          const label = getDayLabel(d, today);
+          return (
+            <button
+              key={formatDateStr(d)}
+              onClick={() => onDateChange(d)}
+              className={`
+                flex flex-col items-center px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all min-w-[52px]
+                ${isSelected
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : isToday
+                    ? 'bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                }
+              `}
+            >
+              <span className="font-semibold">{label || WEEKDAYS_PT[d.getDay()]}</span>
+              <span className={`text-[11px] font-bold ${isSelected ? '' : ''}`}>{d.getDate()}</span>
+              <span className="text-[9px] opacity-70">{MONTHS_PT[d.getMonth()]}</span>
+            </button>
+          );
+        })}
+      </div>
+      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNext}>
+        <ChevronRight className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
 
 // ─── Quality Score Ring ──────────────────────────────────────────────────────
 
@@ -352,14 +448,23 @@ export default function TopMatches() {
   const [hideHighRisk, setHideHighRisk] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Get today's date
-  const dateStr = useMemo(() => {
+  // Date state - defaults to tomorrow for planning ahead
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
+    d.setDate(d.getDate() + 1); // Default to tomorrow
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  const dateStr = useMemo(() => formatDateStr(selectedDate), [selectedDate]);
+
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
   }, []);
+
+  const dayLabel = useMemo(() => getDayLabel(selectedDate, today), [selectedDate, today]);
 
   const { data: topMatches, isLoading } = trpc.matchQuality.getTopMatches.useQuery({
     date: dateStr,
@@ -375,6 +480,10 @@ export default function TopMatches() {
   const handleCalculate = async () => {
     await calculateMutation.mutateAsync({ date: dateStr });
     utils.matchQuality.getTopMatches.invalidate({ date: dateStr });
+  };
+
+  const handleDateChange = (d: Date) => {
+    setSelectedDate(d);
   };
 
   const handleCreateAnalysis = (item: MatchQualityItem) => {
@@ -426,7 +535,7 @@ export default function TopMatches() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-500" />
-            Top Jogos do Dia
+            Top Jogos {dayLabel ? `— ${dayLabel}` : ''}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Partidas com melhor qualidade para projeção estatística
@@ -446,6 +555,9 @@ export default function TopMatches() {
         </Button>
       </div>
 
+      {/* Date Selector */}
+      <DateSelector selectedDate={selectedDate} onDateChange={handleDateChange} />
+
       {/* Info Card */}
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="p-3 flex items-start gap-2">
@@ -456,7 +568,8 @@ export default function TopMatches() {
               dados disponíveis, coerência casa/fora, volume ofensivo, defesa permite volume, equilíbrio competitivo e risco contextual.
             </p>
             <p className="mt-1">
-              Clique em <strong>"Calcular Qualidade"</strong> para analisar os jogos agendados de hoje (máx. 20 por vez).
+              Selecione o dia desejado e clique em <strong>"Calcular Qualidade"</strong> para analisar os jogos agendados (máx. 20 por vez).
+              <strong> Dica:</strong> selecione o dia seguinte para planejar com antecedência.
             </p>
           </div>
         </CardContent>
@@ -610,9 +723,9 @@ export default function TopMatches() {
         <Card>
           <CardContent className="p-8 text-center">
             <Star className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm font-medium">Nenhuma partida analisada</p>
+            <p className="text-sm font-medium">Nenhuma partida analisada para {dayLabel || formatDateStr(selectedDate)}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Clique em "Calcular Qualidade" para analisar os jogos agendados de hoje.
+              Clique em "Calcular Qualidade" para analisar os jogos agendados.
             </p>
           </CardContent>
         </Card>

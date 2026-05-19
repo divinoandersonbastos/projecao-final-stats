@@ -376,3 +376,12 @@
 - [x] Frontend: mensagem fixa disclaimer sobre qualidade da projeção
 - [x] Rodar testes (245/245 passando) e verificar no browser
 - [x] Salvar checkpoint e push GitHub
+
+## Fase 26b: Seletor de Data no Top Jogos (dia seguinte e futuros)
+
+- [x] Backend: já aceita data como parâmetro (calculateForDate + getTopMatches)
+- [x] Backend: buscar fixtures da Sportmonks por data específica (getFixturesByDate aceita qualquer data)
+- [x] Frontend: seletor de 7 dias funcional (Ontem + Hoje + 5 dias futuros) com setas de navegação
+- [x] Frontend: ao clicar "Calcular Qualidade" usa a data selecionada (default: amanhã)
+- [x] Frontend: dia selecionado em azul, "Hoje" com borda distinta, título dinâmico "Top Jogos — Amanhã"
+- [x] Verificar no browser: 5 jogos Copa Libertadores analisados para amanhã, 245/245 testes passando
