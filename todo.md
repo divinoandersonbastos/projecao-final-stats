@@ -358,3 +358,21 @@
 - [x] Adicionar item "Acurácia do Modelo" no sidebar do DashboardLayout
 - [x] Escrever testes unitários para accuracy-service (37 testes, 245 total passando)
 - [x] Verificar no browser: página carrega com estado vazio e instrução de uso, sidebar item ativo
+
+## Fase 26: Melhorias no Módulo Top Jogos do Dia
+
+- [x] Backend: expandir classificação para 5 níveis (Excelente >= 8.5, Boa >= 7.5, Aceitável >= 6.5, Cuidado >= 5.0, Evitar < 5.0)
+- [x] Backend: adicionar campo "melhor bloco estatístico" por partida
+- [x] Backend: adicionar campo "blocos recomendados" (chutes no gol, finalizações, escanteios, gols, BTTS)
+- [x] Backend: adicionar campo "alertas contextuais" por partida
+- [x] Backend: adicionar campo "explicação automática da nota" por partida
+- [x] Backend: gerar tabela de critérios com nota, peso, contribuição e leitura automática
+- [x] Frontend: reescrever cards com nota geral, classificação, melhor bloco, blocos recomendados, alertas
+- [x] Frontend: botão "Ver detalhes dos critérios" abre tabela com nota/peso/contribuição/leitura
+- [x] Frontend: adicionar seção "Top 5 Jogos do Dia" com rank, jogo, liga, horário, nota, melhor bloco, alerta
+- [x] Frontend: filtros expandidos (Todos, Nota 8+, Nota 7+, Chutes no gol, Finalizações, Escanteios, Gols, BTTS, Ocultar dados insuficientes, Ocultar alto risco, Somente Modo 2)
+- [x] Frontend: ordenação por nota, horário, liga, país, melhor bloco
+- [x] Frontend: botão "Criar análise" pré-preenche mandante/visitante/liga/horário/fixture_id/Modo 2
+- [x] Frontend: mensagem fixa disclaimer sobre qualidade da projeção
+- [x] Rodar testes (245/245 passando) e verificar no browser
+- [x] Salvar checkpoint e push GitHub

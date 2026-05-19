@@ -50,24 +50,24 @@ function makeContext(overrides: Partial<FixtureContext> = {}): FixtureContext {
 
 describe("Match Quality Service", () => {
   describe("getQualityLabel", () => {
-    it("should return 'excellent' for scores >= 8.0", () => {
-      expect(getQualityLabel(8.0)).toBe("excellent");
+    it("should return 'excellent' for scores >= 8.5", () => {
+      expect(getQualityLabel(8.5)).toBe("excellent");
       expect(getQualityLabel(9.5)).toBe("excellent");
     });
 
-    it("should return 'good' for scores >= 7.0 and < 8.0", () => {
-      expect(getQualityLabel(7.0)).toBe("good");
-      expect(getQualityLabel(7.9)).toBe("good");
+    it("should return 'good' for scores >= 7.5 and < 8.5", () => {
+      expect(getQualityLabel(7.5)).toBe("good");
+      expect(getQualityLabel(8.4)).toBe("good");
     });
 
-    it("should return 'acceptable' for scores >= 6.0 and < 7.0", () => {
-      expect(getQualityLabel(6.0)).toBe("acceptable");
-      expect(getQualityLabel(6.9)).toBe("acceptable");
+    it("should return 'acceptable' for scores >= 6.5 and < 7.5", () => {
+      expect(getQualityLabel(6.5)).toBe("acceptable");
+      expect(getQualityLabel(7.4)).toBe("acceptable");
     });
 
-    it("should return 'caution' for scores >= 5.0 and < 6.0", () => {
+    it("should return 'caution' for scores >= 5.0 and < 6.5", () => {
       expect(getQualityLabel(5.0)).toBe("caution");
-      expect(getQualityLabel(5.9)).toBe("caution");
+      expect(getQualityLabel(6.4)).toBe("caution");
     });
 
     it("should return 'avoid' for scores < 5.0", () => {

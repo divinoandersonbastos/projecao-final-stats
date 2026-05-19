@@ -10,7 +10,7 @@ import { getDb } from '../db.js';
 import { dailyMatchQuality } from '../../drizzle/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { getTeamStats, getFixturesByDate, getAvailableLeagues } from '../services/sportmonks-service.js';
-import { calculateMatchQuality, type FixtureContext, type MatchQualityResult } from '../services/match-quality-service.js';
+import { calculateMatchQuality, generateCriteriaDetails, type FixtureContext, type MatchQualityResult, type CriteriaDetail } from '../services/match-quality-service.js';
 
 export const matchQualityRouter = router({
   /**
@@ -21,6 +21,8 @@ export const matchQualityRouter = router({
       date: z.string(), // YYYY-MM-DD
       minScore: z.number().optional().default(0),
       blockFilter: z.string().optional(),
+      hideInsufficientData: z.boolean().optional().default(false),
+      hideHighRisk: z.boolean().optional().default(false),
     }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -54,30 +56,116 @@ export const matchQualityRouter = router({
           });
         }
 
-        return filteredResults.map((r: any) => ({
-          id: r.id,
-          fixtureId: r.fixtureId,
-          matchDate: r.matchDate,
-          homeTeam: r.homeTeam,
-          awayTeam: r.awayTeam,
-          homeTeamId: r.homeTeamId,
-          awayTeamId: r.awayTeamId,
-          league: r.league,
-          country: r.country,
-          time: r.time,
-          qualityScore: parseFloat(String(r.qualityScore)),
-          qualityLabel: r.qualityLabel,
-          dataAvailabilityScore: parseFloat(String(r.dataAvailabilityScore)),
-          homeAwayScore: parseFloat(String(r.homeAwayScore)),
-          offensiveVolumeScore: parseFloat(String(r.offensiveVolumeScore)),
-          defensiveVolumeScore: parseFloat(String(r.defensiveVolumeScore)),
-          competitiveBalanceScore: parseFloat(String(r.competitiveBalanceScore)),
-          contextRiskScore: parseFloat(String(r.contextRiskScore)),
-          bestBlocks: r.bestBlocksJson as string[],
-          alerts: r.alertsJson as string[],
-          explanation: r.explanation,
-          projectedStats: r.projectedStatsJson,
-        }));
+        // Hide insufficient data
+        if (input.hideInsufficientData) {
+          filteredResults = filteredResults.filter((r: any) => parseFloat(String(r.dataAvailabilityScore)) >= 5);
+        }
+
+        // Hide high risk
+        if (input.hideHighRisk) {
+          filteredResults = filteredResults.filter((r: any) => parseFloat(String(r.contextRiskScore)) >= 5);
+        }
+
+        return filteredResults.map((r: any) => {
+          const dataAvailabilityScore = parseFloat(String(r.dataAvailabilityScore));
+          const homeAwayScore = parseFloat(String(r.homeAwayScore));
+          const offensiveVolumeScore = parseFloat(String(r.offensiveVolumeScore));
+          const defensiveVolumeScore = parseFloat(String(r.defensiveVolumeScore));
+          const competitiveBalanceScore = parseFloat(String(r.competitiveBalanceScore));
+          const contextRiskScore = parseFloat(String(r.contextRiskScore));
+          const bestBlocks = r.bestBlocksJson as string[];
+
+          // Generate criteria details from cached scores
+          const criteriaDetails: CriteriaDetail[] = [
+            {
+              criterion: 'Dados disponíveis',
+              score: dataAvailabilityScore,
+              weight: 0.20,
+              contribution: parseFloat((dataAvailabilityScore * 0.20).toFixed(2)),
+              reading: dataAvailabilityScore >= 8 ? 'Dados suficientes para os dois times'
+                : dataAvailabilityScore >= 6 ? 'Dados razoáveis, mas amostra moderada'
+                : dataAvailabilityScore >= 4 ? 'Dados limitados para um ou ambos os times'
+                : 'Dados insuficientes para projeção confiável',
+            },
+            {
+              criterion: 'Coerência casa/fora',
+              score: homeAwayScore,
+              weight: 0.20,
+              contribution: parseFloat((homeAwayScore * 0.20).toFixed(2)),
+              reading: homeAwayScore >= 8 ? 'Boa amostra em mandante/visitante'
+                : homeAwayScore >= 6 ? 'Amostra moderada em mandante/visitante'
+                : homeAwayScore >= 4 ? 'Poucos jogos no contexto casa/fora'
+                : 'Dados insuficientes de mando de campo',
+            },
+            {
+              criterion: 'Volume ofensivo',
+              score: offensiveVolumeScore,
+              weight: 0.25,
+              contribution: parseFloat((offensiveVolumeScore * 0.25).toFixed(2)),
+              reading: offensiveVolumeScore >= 8 ? 'Volume ofensivo alto projetado'
+                : offensiveVolumeScore >= 6 ? 'Volume ofensivo moderado'
+                : offensiveVolumeScore >= 4 ? 'Volume ofensivo abaixo da média'
+                : 'Volume ofensivo baixo',
+            },
+            {
+              criterion: 'Defesa permite volume',
+              score: defensiveVolumeScore,
+              weight: 0.15,
+              contribution: parseFloat((defensiveVolumeScore * 0.15).toFixed(2)),
+              reading: defensiveVolumeScore >= 8 ? 'Defesas permitem chances e escanteios'
+                : defensiveVolumeScore >= 6 ? 'Defesas permitem volume moderado'
+                : defensiveVolumeScore >= 4 ? 'Uma ou ambas defesas são sólidas'
+                : 'Defesas sólidas limitam volume',
+            },
+            {
+              criterion: 'Equilíbrio competitivo',
+              score: competitiveBalanceScore,
+              weight: 0.10,
+              contribution: parseFloat((competitiveBalanceScore * 0.10).toFixed(2)),
+              reading: competitiveBalanceScore >= 8 ? 'Jogo equilibrado entre as equipes'
+                : competitiveBalanceScore >= 6 ? 'Jogo competitivo com leve favoritismo'
+                : competitiveBalanceScore >= 4 ? 'Favoritismo moderado de uma equipe'
+                : 'Desequilíbrio competitivo acentuado',
+            },
+            {
+              criterion: 'Baixo risco contextual',
+              score: contextRiskScore,
+              weight: 0.10,
+              contribution: parseFloat((contextRiskScore * 0.10).toFixed(2)),
+              reading: contextRiskScore >= 8 ? 'Contexto normal de liga'
+                : contextRiskScore >= 6 ? 'Copa ou fase eliminatória leve'
+                : contextRiskScore >= 4 ? 'Mata-mata ou final — risco elevado'
+                : 'Risco contextual elevado',
+            },
+          ];
+
+          return {
+            id: r.id,
+            fixtureId: r.fixtureId,
+            matchDate: r.matchDate,
+            homeTeam: r.homeTeam,
+            awayTeam: r.awayTeam,
+            homeTeamId: r.homeTeamId,
+            awayTeamId: r.awayTeamId,
+            league: r.league,
+            country: r.country,
+            time: r.time,
+            qualityScore: parseFloat(String(r.qualityScore)),
+            qualityLabel: r.qualityLabel,
+            dataAvailabilityScore,
+            homeAwayScore,
+            offensiveVolumeScore,
+            defensiveVolumeScore,
+            competitiveBalanceScore,
+            contextRiskScore,
+            bestBlock: bestBlocks[0] || 'Evitar',
+            bestBlocks,
+            alerts: r.alertsJson as string[],
+            explanation: r.explanation,
+            projectedStats: r.projectedStatsJson,
+            criteriaDetails,
+          };
+        });
       }
 
       return [];

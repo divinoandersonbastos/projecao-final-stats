@@ -27,10 +27,12 @@ export interface MatchQualityResult {
   qualityScore: number;
   qualityLabel: QualityLabel;
   criteria: QualityCriteriaScores;
+  bestBlock: StatBlock;
   bestBlocks: StatBlock[];
   alerts: string[];
   explanation: string;
   projectedStats: ProjectedStats;
+  criteriaDetails: CriteriaDetail[];
 }
 
 export interface ProjectedStats {
@@ -70,21 +72,157 @@ const WEIGHTS = {
 // ============================================================
 
 export function getQualityLabel(score: number): QualityLabel {
-  if (score >= 8.0) return 'excellent';
-  if (score >= 7.0) return 'good';
-  if (score >= 6.0) return 'acceptable';
+  if (score >= 8.5) return 'excellent';
+  if (score >= 7.5) return 'good';
+  if (score >= 6.5) return 'acceptable';
   if (score >= 5.0) return 'caution';
   return 'avoid';
 }
 
 export function getQualityLabelText(label: QualityLabel): string {
   switch (label) {
-    case 'excellent': return 'Excelente para projeção';
-    case 'good': return 'Boa para projeção';
+    case 'excellent': return 'Excelente';
+    case 'good': return 'Boa';
     case 'acceptable': return 'Aceitável';
     case 'caution': return 'Cuidado';
-    case 'avoid': return 'Evitar análise automática';
+    case 'avoid': return 'Evitar';
   }
+}
+
+// ============================================================
+// CRITERIA DETAIL TABLE (leitura automática)
+// ============================================================
+
+export interface CriteriaDetail {
+  criterion: string;
+  score: number;
+  weight: number;
+  contribution: number;
+  reading: string;
+}
+
+export function generateCriteriaDetails(
+  criteria: QualityCriteriaScores,
+  homeStats: TeamStats | null,
+  awayStats: TeamStats | null,
+  context: FixtureContext
+): CriteriaDetail[] {
+  const details: CriteriaDetail[] = [];
+
+  // 1. Dados disponíveis
+  const dataReading = criteria.dataAvailability >= 8
+    ? 'Dados suficientes para os dois times'
+    : criteria.dataAvailability >= 6
+    ? 'Dados razoáveis, mas amostra moderada'
+    : criteria.dataAvailability >= 4
+    ? 'Dados limitados para um ou ambos os times'
+    : 'Dados insuficientes para projeção confiável';
+  details.push({
+    criterion: 'Dados disponíveis',
+    score: criteria.dataAvailability,
+    weight: 0.20,
+    contribution: parseFloat((criteria.dataAvailability * 0.20).toFixed(2)),
+    reading: dataReading,
+  });
+
+  // 2. Coerência casa/fora
+  const coherenceReading = criteria.homeAwayCoherence >= 8
+    ? 'Boa amostra em mandante/visitante'
+    : criteria.homeAwayCoherence >= 6
+    ? 'Amostra moderada em mandante/visitante'
+    : criteria.homeAwayCoherence >= 4
+    ? 'Poucos jogos no contexto casa/fora'
+    : 'Dados insuficientes de mando de campo';
+  details.push({
+    criterion: 'Coerência casa/fora',
+    score: criteria.homeAwayCoherence,
+    weight: 0.20,
+    contribution: parseFloat((criteria.homeAwayCoherence * 0.20).toFixed(2)),
+    reading: coherenceReading,
+  });
+
+  // 3. Volume ofensivo
+  let offensiveReading = 'Volume ofensivo baixo';
+  if (criteria.offensiveVolume >= 8) {
+    const blocks: string[] = [];
+    if (homeStats && awayStats) {
+      const totalShots = homeStats.shotsAvg + awayStats.shotsAvg;
+      const homeOnTargetRatio = homeStats.shotsTotal > 0 ? homeStats.shotsOnTarget / homeStats.shotsTotal : 0.35;
+      const awayOnTargetRatio = awayStats.shotsTotal > 0 ? awayStats.shotsOnTarget / awayStats.shotsTotal : 0.35;
+      const totalShotsOnTarget = (homeStats.shotsAvg * homeOnTargetRatio) + (awayStats.shotsAvg * awayOnTargetRatio);
+      const totalCorners = homeStats.cornersAvg + awayStats.cornersAvg;
+      if (totalShotsOnTarget >= 7.5) blocks.push('chutes no gol');
+      if (totalShots >= 23) blocks.push('finalizações');
+      if (totalCorners >= 8.0) blocks.push('escanteios');
+    }
+    offensiveReading = blocks.length > 0
+      ? `Volume ofensivo alto para ${blocks.join(' e ')}` 
+      : 'Volume ofensivo alto projetado';
+  } else if (criteria.offensiveVolume >= 6) {
+    offensiveReading = 'Volume ofensivo moderado';
+  } else if (criteria.offensiveVolume >= 4) {
+    offensiveReading = 'Volume ofensivo abaixo da média';
+  }
+  details.push({
+    criterion: 'Volume ofensivo',
+    score: criteria.offensiveVolume,
+    weight: 0.25,
+    contribution: parseFloat((criteria.offensiveVolume * 0.25).toFixed(2)),
+    reading: offensiveReading,
+  });
+
+  // 4. Defesa permite volume
+  let defenseReading = 'Defesas sólidas limitam volume';
+  if (criteria.defensiveVolume >= 8) {
+    defenseReading = 'Defesas permitem chances e escanteios';
+  } else if (criteria.defensiveVolume >= 6) {
+    defenseReading = 'Defesas permitem volume moderado';
+  } else if (criteria.defensiveVolume >= 4) {
+    defenseReading = 'Uma ou ambas defesas são sólidas';
+  }
+  details.push({
+    criterion: 'Defesa permite volume',
+    score: criteria.defensiveVolume,
+    weight: 0.15,
+    contribution: parseFloat((criteria.defensiveVolume * 0.15).toFixed(2)),
+    reading: defenseReading,
+  });
+
+  // 5. Equilíbrio competitivo
+  let balanceReading = 'Desequilíbrio competitivo acentuado';
+  if (criteria.competitiveBalance >= 8) {
+    balanceReading = 'Jogo equilibrado entre as equipes';
+  } else if (criteria.competitiveBalance >= 6) {
+    balanceReading = 'Jogo competitivo com leve favoritismo';
+  } else if (criteria.competitiveBalance >= 4) {
+    balanceReading = 'Favoritismo moderado de uma equipe';
+  }
+  details.push({
+    criterion: 'Equilíbrio competitivo',
+    score: criteria.competitiveBalance,
+    weight: 0.10,
+    contribution: parseFloat((criteria.competitiveBalance * 0.10).toFixed(2)),
+    reading: balanceReading,
+  });
+
+  // 6. Risco contextual
+  let contextReading = 'Risco contextual elevado';
+  if (criteria.contextRisk >= 8) {
+    contextReading = 'Contexto normal de liga';
+  } else if (criteria.contextRisk >= 6) {
+    contextReading = 'Copa ou fase eliminatória leve';
+  } else if (criteria.contextRisk >= 4) {
+    contextReading = 'Mata-mata ou final — risco elevado';
+  }
+  details.push({
+    criterion: 'Baixo risco contextual',
+    score: criteria.contextRisk,
+    weight: 0.10,
+    contribution: parseFloat((criteria.contextRisk * 0.10).toFixed(2)),
+    reading: contextReading,
+  });
+
+  return details;
 }
 
 // ============================================================
@@ -480,8 +618,10 @@ export function calculateMatchQuality(
 
   const qualityLabel = getQualityLabel(qualityScore);
   const bestBlocks = detectBestBlocks(homeStats, awayStats);
+  const bestBlock = bestBlocks[0] || 'Evitar';
   const alerts = generateAlerts(homeStats, awayStats, criteria, context);
   const explanation = generateExplanation(homeTeam, awayTeam, qualityScore, qualityLabel, criteria, bestBlocks);
+  const criteriaDetails = generateCriteriaDetails(criteria, homeStats, awayStats, context);
 
   // Calculate projected stats for reference
   const projectedStats = calculateProjectedStats(homeStats, awayStats);
@@ -490,10 +630,12 @@ export function calculateMatchQuality(
     qualityScore,
     qualityLabel,
     criteria,
+    bestBlock,
     bestBlocks,
     alerts,
     explanation,
     projectedStats,
+    criteriaDetails,
   };
 }
 

@@ -87,15 +87,20 @@ export default function NewAnalysis() {
       }
     }
 
-    // Check for agenda fixture data (from Agenda page)
+    // Check for agenda fixture data (from Agenda page or Top Jogos)
     const agendaFixtureStr = sessionStorage.getItem("agendaFixture");
     if (agendaFixtureStr) {
       try {
         const agendaData = JSON.parse(agendaFixtureStr);
         setHomeTeam(prev => ({ ...prev, name: agendaData.homeTeam || "" }));
         setAwayTeam(prev => ({ ...prev, name: agendaData.awayTeam || "" }));
+        // Set mode if provided (Top Jogos defaults to mode2)
+        if (agendaData.mode === 'mode1' || agendaData.mode === 'mode2') {
+          setAnalysisMode(agendaData.mode);
+        }
         sessionStorage.removeItem("agendaFixture");
-        toast.success(`Partida pré-selecionada: ${agendaData.homeTeam} x ${agendaData.awayTeam}`);
+        const extra = agendaData.league ? ` (${agendaData.league})` : '';
+        toast.success(`Partida pré-selecionada: ${agendaData.homeTeam} x ${agendaData.awayTeam}${extra}`);
         return;
       } catch (error) {
         console.error("Erro ao carregar dados da agenda:", error);
